@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#070b12"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="درب">
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>درب | سلامة وتتبع الشاحنات</title>
+<link rel="stylesheet" href="leaflet.css">
+<style>
+:root{--bg:#070b12;--p1:#0e1523;--p2:#141d30;--ln:#1f2b44;--tx:#eef2f8;--mu:#8a97b0;--gr:#22c55e;--gr2:#16a34a;--rd:#ef4444;--or:#f59e0b;--bl:#38bdf8;--pu:#a855f7;--sa:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font-family:"Segoe UI",system-ui,-apple-system,"Noto Sans Arabic",Tahoma,sans-serif;overflow:hidden}
+button{font-family:inherit;cursor:pointer;color:inherit}
+input,select{font-family:inherit}
+#app{display:none;height:100%;flex-direction:column}
+#app.on{display:flex}
+.view{display:none;flex:1;min-height:0;position:relative}.view.on{display:flex;flex-direction:column}
+/* top bar */
+header{display:flex;align-items:center;gap:10px;padding:calc(10px + var(--sa)) 14px 10px;background:var(--p1);border-bottom:1px solid var(--ln)}
+header img{width:30px;height:30px;border-radius:8px}header b{font-size:18px;letter-spacing:.3px}
+header .sp{flex:1}.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:5px 10px;border-radius:99px;background:var(--p2);border:1px solid var(--ln);color:var(--mu)}
+.dot{width:8px;height:8px;border-radius:50%;background:#64748b;display:inline-block}.dot.ok{background:var(--gr);box-shadow:0 0 8px var(--gr)}.dot.bad{background:var(--rd)}.dot.warn{background:var(--or)}
+/* bottom nav */
+nav{display:flex;background:var(--p1);border-top:1px solid var(--ln);padding:6px 6px calc(6px + var(--sb))}
+nav button{flex:1;background:none;border:0;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;color:var(--mu);border-radius:12px}
+nav button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav button.on{color:var(--gr)}
+/* driver HUD */
+#hud{display:flex;gap:10px;padding:10px 12px;background:var(--p1);align-items:stretch}
+.card{background:var(--p2);border:1px solid var(--ln);border-radius:16px}
+.spdc{flex:1.1;padding:8px 14px;text-align:center}.spdc small,.nxt small,.chipc small{display:block;color:var(--mu);font-size:11px}
+.spd{font-size:54px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}.spd.over{color:var(--rd)}.unit{font-size:12px;color:var(--mu)}
+.sign{width:84px;height:84px;border-radius:50%;background:#fff;border:8px solid var(--rd);color:#111;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;align-self:center;flex:none}
+.sign.none{border-color:#3b4660;background:var(--p2);color:var(--mu);font-size:13px;text-align:center;line-height:1.2;font-weight:700}
+.sign.over{animation:bl .5s infinite alternate}@keyframes bl{from{box-shadow:0 0 0 0 #ef444488}to{box-shadow:0 0 0 12px #ef444400}}
+.nxt{flex:1.3;padding:8px 12px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.nxt .v{font-size:19px;font-weight:800}.nxt .s{font-size:12px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mapbox{flex:1;position:relative;min-height:140px}#map,#opsmap{position:absolute;inset:0;background:#0b1220}
+.leaflet-container{font-family:inherit}.dk{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.7)}
+.layers{position:absolute;top:10px;right:10px;left:10px;z-index:500;display:flex;gap:6px;flex-wrap:wrap;pointer-events:none}
+.chip{pointer-events:auto;padding:7px 12px;border-radius:99px;background:#0e1523dd;border:1px solid var(--ln);font-size:13px;backdrop-filter:blur(6px);display:inline-flex;gap:6px;align-items:center}
+.chip.on{background:#14532dcc;border-color:var(--gr);color:#d1fae5}
+.recenter{position:absolute;left:12px;bottom:12px;z-index:500;width:44px;height:44px;border-radius:50%;background:#0e1523ee;border:1px solid var(--ln);display:flex;align-items:center;justify-content:center;font-size:20px}
+#actions{display:flex;gap:8px;padding:10px 12px;background:var(--p1);border-top:1px solid var(--ln)}
+#actions button{flex:1;border:0;border-radius:14px;padding:12px 4px;font-weight:800;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:4px}
+#actions button span.i{font-size:22px}
+.b-sos{background:linear-gradient(#ef4444,#b91c1c);color:#fff}.b-rep{background:var(--p2);border:1px solid var(--ln)!important}.b-tow{background:linear-gradient(#2563eb,#1d4ed8);color:#fff}
+.sosprog{position:relative;overflow:hidden}.sosprog i{position:absolute;inset:0;background:#fff3;transform:scaleX(0);transform-origin:right;transition:none}
+.sosprog.hold i{transform:scaleX(1);transition:transform 1.2s linear}
+/* banner + overlays */
+#banner{position:fixed;top:calc(8px + var(--sa));left:10px;right:10px;z-index:4000;display:none;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;font-weight:700;background:#1e293bf2;border:1px solid var(--ln);box-shadow:0 8px 30px #000a;backdrop-filter:blur(8px)}
+#banner.crit{background:#7f1d1def;border-color:var(--rd)}#banner .bi{font-size:26px}#banner .bt{flex:1;font-size:15px;line-height:1.5}#banner button{background:#fff2;border:0;border-radius:10px;padding:8px 12px;font-weight:700}
+#crash{position:fixed;inset:0;z-index:5000;background:#450a0aee;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px}
+#crash .n{font-size:90px;font-weight:900}#crash button{padding:16px 40px;font-size:20px;font-weight:800;border-radius:16px;border:0;background:var(--gr);color:#04210f}
+.sheet{position:fixed;inset:0;z-index:4500;background:#000a;display:none;align-items:flex-end}
+.sheet.on{display:flex}.sheet>div{width:100%;background:var(--p1);border-radius:22px 22px 0 0;padding:18px 16px calc(18px + var(--sb));max-height:85%;overflow:auto;border-top:1px solid var(--ln)}
+.sheet h3{margin:0 0 12px;font-size:18px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.grid button{background:var(--p2);border:1px solid var(--ln);border-radius:14px;padding:14px 4px;font-size:13px;font-weight:700;display:flex;flex-direction:column;gap:6px;align-items:center}.grid .i{font-size:26px}
+/* screens: splash/onboard/setup */
+.full{position:fixed;inset:0;z-index:6000;background:radial-gradient(ellipse at top,#13203a,#070b12 65%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px calc(24px) calc(28px + var(--sb));gap:14px}
+#splash{z-index:7000;transition:opacity .5s}#splash img{width:112px;height:112px;border-radius:28px;box-shadow:0 10px 50px #22c55e44;animation:pop .8s ease}
+@keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+#splash h1{margin:6px 0 0;font-size:40px;letter-spacing:1px}#splash p{margin:0;color:var(--mu)}
+.btn{width:100%;max-width:420px;padding:15px;border-radius:14px;border:0;font-size:17px;font-weight:800;background:var(--gr);color:#04210f}.btn.sec{background:var(--p2);color:var(--tx);border:1px solid var(--ln)}.btn.sm{width:auto;font-size:14px;padding:10px 16px}
+.dots{display:flex;gap:6px}.dots i{width:8px;height:8px;border-radius:50%;background:var(--ln)}.dots i.on{background:var(--gr);width:22px;border-radius:6px}
+.ob-i{font-size:84px}.full h2{margin:0;font-size:26px}.full p.t{color:var(--mu);margin:0;max-width:380px;line-height:1.9;font-size:16px}
+.in{width:100%;max-width:420px;padding:14px;border-radius:12px;border:1px solid var(--ln);background:var(--p2);color:var(--tx);font-size:16px;text-align:right}
+.lbl{width:100%;max-width:420px;text-align:right;color:var(--mu);font-size:13px;margin-top:4px}
+.seg{display:flex;width:100%;max-width:420px;gap:8px}.seg button{flex:1;padding:12px 6px;border-radius:12px;border:1px solid var(--ln);background:var(--p2);font-weight:700;font-size:15px}.seg button.on{border-color:var(--gr);background:#14532d88}
+.codebox{direction:ltr;font-family:ui-monospace,Menlo,Consolas,monospace;letter-spacing:1px;font-size:17px;text-align:center}
+.scroll{overflow:auto;justify-content:flex-start;padding-top:calc(34px + var(--sa))}
+/* ops */
+#opsb{flex:1;display:flex;flex-direction:column;min-height:0}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:10px 12px;background:var(--p1)}
+.kpi{padding:10px 8px;text-align:center}.kpi b{display:block;font-size:24px;font-variant-numeric:tabular-nums}.kpi small{color:var(--mu);font-size:11px}
+#opsmapbox{flex:1;position:relative;min-height:170px}
+#side{max-height:44%;overflow:auto;background:var(--p1);border-top:1px solid var(--ln);padding:8px 12px}
+.sh{display:flex;align-items:center;justify-content:space-between;margin:8px 0;color:var(--mu);font-size:13px;font-weight:700}
+.tr{display:flex;align-items:center;gap:10px;padding:10px;margin-bottom:8px;cursor:pointer}
+.tr .av{width:40px;height:40px;border-radius:12px;background:#0b1220;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+.tr .m{flex:1;min-width:0}.tr .m b{display:block;font-size:15px}.tr .m small{color:var(--mu);font-size:12px}
+.tr .sp2{font-weight:800;font-size:18px;text-align:left}.tr .sp2 small{display:block;color:var(--mu);font-size:10px;font-weight:400}
+.tag{padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700}.t-ok{background:#14532d;color:#bbf7d0}.t-warn{background:#78350f;color:#fde68a}.t-bad{background:#7f1d1d;color:#fecaca}.t-off{background:#1e293b;color:var(--mu)}
+.ev{display:flex;gap:10px;padding:8px 4px;border-bottom:1px solid var(--ln);font-size:14px;align-items:flex-start}.ev .ei{font-size:20px}.ev small{color:var(--mu);display:block;font-size:11px}
+.empty{text-align:center;color:var(--mu);padding:22px 10px;line-height:1.9;font-size:14px}
+@media(min-width:900px){
+ #app{max-width:none}#v1 #opsb{flex-direction:row}#opsleft{flex:1;display:flex;flex-direction:column;min-width:0}#side{max-height:none;width:400px;border-top:0;border-right:1px solid var(--ln)}
+ #v0 .wrap{max-width:560px;margin:0 auto;width:100%}
+}
+/* settings */
+.set{padding:14px;overflow:auto;flex:1}.set .card{padding:14px;margin-bottom:12px}.set h4{margin:0 0 10px;font-size:15px}.set .in{max-width:none}.set label{display:block;color:var(--mu);font-size:12px;margin:10px 0 4px}
+.set select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--ln);background:var(--p2);color:var(--tx);font-size:15px}
+.row2{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:14px}
+.sw{width:46px;height:26px;border-radius:99px;background:#334155;position:relative;border:0;flex:none}.sw::after{content:"";position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}.sw.on{background:var(--gr2)}.sw.on::after{right:23px}
+.set p{color:var(--mu);font-size:13px;line-height:1.9;margin:6px 0}
+.lg{display:flex;gap:8px;align-items:flex-start}.mk{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;border:2px solid #fff;box-shadow:0 2px 8px #0008}
+.tk{background:#0ea5e9}.tk.stale{background:#64748b}.tk.over{background:var(--rd)}
+.lab{position:absolute;top:36px;left:50%;transform:translateX(-50%);background:#0e1523ee;border:1px solid var(--ln);color:#fff;font-size:11px;padding:1px 7px;border-radius:8px;white-space:nowrap;font-weight:700}
+.me{width:22px;height:22px;border-radius:50%;background:var(--gr);border:3px solid #fff;box-shadow:0 0 0 8px #22c55e44}
+.leaflet-popup-content-wrapper{background:var(--p1);color:var(--tx);border-radius:14px}.leaflet-popup-tip{background:var(--p1)}
+</style></head><body>
+
+<div class="full" id="splash"><img src="icon-512.png" alt=""><h1>درب</h1><p>سلامة وتتبع الشاحنات</p></div>
+
+<div class="full" id="onb" style="display:none"></div>
+
+<div class="full scroll" id="setup" style="display:none">
+ <img src="icon.svg" width="64" height="64" style="border-radius:16px" alt="">
+ <h2>إعداد الأسطول</h2>
+ <p class="t" style="margin-bottom:4px">كل شاحنات شركتك بتشتغل بنفس كود الأسطول. الكود هو اللي بيحمي بياناتك، فلازم يفضل عندك أنت وسواقينك بس.</p>
+ <div class="seg" id="fsel"><button class="on" data-m="new" onclick="fmode('new')">إنشاء أسطول جديد</button><button data-m="join" onclick="fmode('join')">عندي كود</button></div>
+ <div class="lbl" id="flbl">كود أسطولك الجديد (اتولد عشوائي، 24 حرف)</div>
+ <input class="in codebox" id="fleet" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="كود الأسطول">
+ <div class="lbl">اسمك أو رقم الشاحنة</div>
+ <input class="in" id="tname" maxlength="24" placeholder="مثال: شاحنة 5 - أحمد">
+ <div class="lbl">دورك</div>
+ <div class="seg" id="rsel"><button class="on" data-r="driver" onclick="rolePick('driver')">🚛 سائق</button><button data-r="ops" onclick="rolePick('ops')">🖥 مدير أسطول</button></div>
+ <div class="lbl" id="cargolbl">نوع الحمولة</div>
+ <select class="in" id="cargo0"><option>وقود (فئة 3)</option><option>غاز (فئة 2)</option><option>مواد كيماوية (فئة 8)</option><option>حمولة عامة</option></select>
+ <button class="btn" onclick="finishSetup()" style="margin-top:10px">ابدأ</button>
+ <button class="btn sec" onclick="startDemo()" style="font-size:14px">تجربة بدون أسطول (محاكاة، بيانات غير حقيقية)</button>
+</div>
+
+<div id="banner"><span class="bi" id="bi">⚠️</span><span class="bt" id="bt"></span><button onclick="hideBanner()">تمام</button></div>
+<div id="crash"><div style="font-size:26px;font-weight:800">اتحس بصدمة قوية</div><div class="n" id="cn">15</div><div style="font-size:17px">لو مش بخير مش محتاج تعمل حاجة، هنبلّغ غرفة العمليات تلقائيًا.</div><button onclick="crashOk()">أنا بخير</button></div>
+
+<div class="sheet" id="rsheet" onclick="if(event.target==this)closeSheet()"><div><h3>بلّغ عن حاجة على الطريق</h3><div class="grid" id="rgrid"></div></div></div>
+
+<div id="app">
+ <header><img src="icon.svg" alt=""><b>درب</b><span class="sp"></span><span class="pill" id="gpsp" onclick="if(ROLE=='driver'&&!demo)startGPS()" style="cursor:pointer"><span class="dot" id="gdot"></span><span id="gtxt">GPS</span></span><span class="pill" id="netp"><span class="dot" id="ndot"></span><span id="ntxt">...</span></span></header>
+
+ <section class="view on" id="v0"><div class="wrap" style="display:flex;flex-direction:column;flex:1;min-height:0">
+  <div id="hud">
+   <div class="card spdc"><small>سرعتك</small><div class="spd" id="spd">0</div><div class="unit">كم/س</div></div>
+   <div class="sign none" id="sign">--</div>
+   <div class="card nxt"><small id="nl">قدامك</small><div class="v" id="nv">الطريق خالي</div><div class="s" id="ns">مفيش رادار أو نقطة قريبة</div></div>
+  </div>
+  <div id="mapbox"><div id="map"></div>
+   <div class="layers"><button class="chip" data-l="T" onclick="lay('T')">🚦 الزحمة</button><button class="chip on" data-l="C" onclick="lay('C')">📷 رادارات</button><button class="chip on" data-l="K" onclick="lay('K')">🛑 تفتيش</button><button class="chip" data-l="B" onclick="lay('B')">💰 بوابات</button><button class="chip" id="cM" style="display:none;border-color:var(--or)" onclick="motionAsk()">📳 فعّل حساس الصدمات</button></div>
+   <button class="recenter" onclick="recenter()">⌖</button></div>
+  <div class="pill" id="tfbar" style="margin:8px 12px 0;justify-content:center;border-radius:12px;background:var(--p2)"><span>🚦</span><span id="tf">حالة الطريق: بنجهزها...</span></div>
+  <div id="actions">
+   <button class="b-sos sosprog" id="sosb"><i></i><span class="i">🆘</span>اضغط مطولًا: طوارئ</button>
+   <button class="b-tow" onclick="sos('طلب ونش / صيانة')"><span class="i">🛠️</span>ونش وصيانة</button>
+   <button class="b-rep" onclick="openSheet()"><span class="i">📢</span>بلّغ عن خطر</button>
+  </div></div>
+ </section>
+
+ <section class="view" id="v1"><div id="opsb"><div id="opsleft">
+  <div class="kpis"><div class="card kpi"><b id="k1">0</b><small>شاحنات أونلاين</small></div><div class="card kpi"><b id="k2">0</b><small>مخالفات سرعة الآن</small></div><div class="card kpi"><b id="k3">0</b><small>بلاغات اليوم</small></div><div class="card kpi"><b id="k4">--</b><small>متوسط السرعة</small></div></div>
+  <div id="opsmapbox"><div id="opsmap"></div><div class="layers"><button class="chip" onclick="renderOps.fit=0;renderOps()">🎯 كل الشاحنات</button><button class="chip" data-l="T" onclick="lay('T')">🚦 الزحمة</button><button class="chip on" data-l="C" onclick="lay('C')">📷 رادارات</button><button class="chip on" data-l="K" onclick="lay('K')">🛑 تفتيش</button><button class="chip" data-l="B" onclick="lay('B')">💰 بوابات</button></div></div></div>
+  <div id="side"><div class="sh"><span>الشاحنات</span><span id="fcode" class="pill" style="font-size:11px"></span></div><div id="tlist"></div>
+   <div class="sh"><span>آخر الأحداث</span><button class="chip" style="pointer-events:auto;font-size:12px" onclick="exportCsv()">⬇ تصدير CSV</button></div><div id="elist"></div></div></div>
+ </section>
+
+ <section class="view" id="v2"><div class="set">
+  <div class="card"><h4>بياناتك</h4><label>الاسم / رقم الشاحنة</label><input class="in" id="s_name" maxlength="24" onchange="saveSet()">
+   <label>نوع الحمولة</label><select id="cargo" onchange="saveSet()"><option>وقود (فئة 3)</option><option>غاز (فئة 2)</option><option>مواد كيماوية (فئة 8)</option><option>حمولة عامة</option></select>
+   <label>أقصى سرعة مسموحة لشاحنتك (كم/س)</label><select id="cap" onchange="saveSet()"><option>60</option><option selected>70</option><option>80</option><option>90</option></select>
+   <label>رقم واتساب للطوارئ (بالكود الدولي، مثال 201001234567)</label><input class="in" id="dnum" inputmode="numeric" placeholder="201001234567" onchange="saveSet()">
+   <div class="row2"><span>التنبيهات الصوتية</span><button class="sw on" id="sw_v" onclick="tog('voice')"></button></div>
+   <div class="row2"><span>إبقاء الشاشة منورة</span><button class="sw on" id="sw_w" onclick="tog('wake')"></button></div></div>
+  <div class="card"><h4>الأسطول</h4><p id="fl_info"></p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="shareFleet()">📤 مشاركة دعوة للسواقين</button><button class="btn sm sec" onclick="copyCode()">نسخ الكود</button><button class="btn sm sec" onclick="leave()">خروج من الأسطول</button></div></div>
+  <div class="card"><h4>مصادر البيانات (حقيقية)</h4>
+   <p>📷 الرادارات ونقاط التفتيش والبوابات وحدود السرعة: خريطة OpenStreetMap (بيانات مجتمع، بتتحدث على طول). مش قاعدة بيانات رسمية، فممكن تفوتها نقط جديدة أو متحركة.</p>
+   <p>🚦 الزحمة والحوادث: TomTom Traffic، بنقيس السرعة الفعلية قصاد السرعة الطبيعية على الطريق.</p>
+   <p>📍 مواقع الشاحنات: GPS موبايل السائق لحظيًا. التطبيق لازم يكون مفتوح والشاشة منورة.</p>
+   <p>💥 الصدمة والفرملة العنيفة من حساسات الموبايل وسرعة الـGPS. الحساسات حساسيتها مضبوطة بشكل عام ومحتاجة ضبط على شاحنتك.</p>
+   <p>مفيش حساسات حرارة حمولة أو ضغط كاوتش أو بيانات موتور من غير أجهزة خارجية.</p></div>
+  <div class="card"><h4>تثبيت التطبيق على الموبايل</h4><p id="instp">أندرويد (كروم): قائمة ⋮ ثم "تثبيت التطبيق". آيفون (سفاري): زرار المشاركة ثم "إضافة إلى الشاشة الرئيسية". بعد التثبيت بيفتح زي أي تطبيق وبشاشة كاملة.</p></div>
+  <div class="card"><h4>إصدار</h4><p>درب 1.0. التنبيهات مساعدة فقط ومش بديل لانتباه السائق.</p></div>
+ </div></section>
+
+ <nav><button class="on" id="n0" onclick="tab(0)"><svg viewBox="0 0 24 24"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="1.8"/><circle cx="17" cy="18" r="1.8"/></svg>السائق</button><button id="n1" onclick="tab(1)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4M7 12l3-3 3 2 4-4"/></svg>غرفة العمليات</button><button id="n2" onclick="tab(2)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.6a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-.9c.6.5 1.3.9 2 1.2L10 21h4l.6-2.6c.7-.3 1.4-.7 2-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>الإعدادات</button></nav>
+</div>
+
+<script src="leaflet.js"></script><script src="data.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const FB='https://truck-radar-demo-default-rtdb.firebaseio.com';
+const TT_KEY='XhtMYpsJaKDw9DnXyrFlMRujgtkDGm1R';
+const ST=(()=>{try{return JSON.parse(localStorage.darb||'{}')}catch(e){return{}}})();
+function save(){try{localStorage.darb=JSON.stringify(ST)}catch(e){}}
+let GPSERR=false,wid=null,trucksOn=false,lastMove=0,trails={},trailL={},DID=(ST.did||(ST.did=Math.random().toString(36).slice(2,10))),map,opsmap,meM,pos=[30.0444,31.2357],speed=0,heading=null,gotFix=false,FLEET='',TNAME='',ROLE='driver',live=false,demo=false;
+let trucks={},events={},truckMk={},evMk={},seenEv={},lastPush=0,prevSp=null,prevT=0,lastMot=0,lastAlert={},followMe=true;
+const LAY={T:false,C:true,K:true,B:false},layG={};
+const EVT={sos:['🆘','طوارئ'],brake:['🛑','فرملة عنيفة'],accel:['⚡','تسارع عنيف'],impact:['💥','صدمة'],motion:['〰️','حركة عنيفة'],hazard:['⚠️','بلاغ خطر'],traffic:['🚦','زحمة'],info:['ℹ️','معلومة'],crash:['🆘','صدمة بدون رد'],tow:['🛠️','طلب ونش'],checkpoint:['🛑','كمين / تفتيش'],radar:['📷','رادار متحرك'],closed:['⛔','طريق مغلق'],stopped:['🚧','مركبة واقفة'],bump:['〰️','مطب / حفرة'],fog:['🌫️','ضباب / رؤية سيئة']};
+/* ---------- helpers ---------- */
+const hhmm=t=>new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+const ago=t=>{const s=Math.max(0,(Date.now()-t)/1000|0);return s<60?s+' ث':s<3600?(s/60|0)+' د':(s/3600|0)+' س'};
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function dist(a,b){const R=6371000,r=x=>x*Math.PI/180,dl=r(b[0]-a[0]),dn=r(b[1]-a[1]);const h=Math.sin(dl/2)**2+Math.cos(r(a[0]))*Math.cos(r(b[0]))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function bearing(a,b){const r=x=>x*Math.PI/180,y=Math.sin(r(b[1]-a[1]))*Math.cos(r(b[0])),x=Math.cos(r(a[0]))*Math.sin(r(b[0]))-Math.sin(r(a[0]))*Math.cos(r(b[0]))*Math.cos(r(b[1]-a[1]));return(Math.atan2(y,x)*180/Math.PI+360)%360}
+const fmtD=d=>d<1000?Math.round(d/10)*10+' م':(d/1000).toFixed(1)+' كم';
+/* ---------- audio / banner ---------- */
+function say(t){if(!ST.voiceOff)try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ar-EG';speechSynthesis.speak(u)}catch(e){}}
+let AC=null;function actx(){if(!AC)try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}return AC}
+function unlockAudio(){try{const a=actx();a&&a.state=='suspended'&&a.resume();if(!unlockAudio.d){unlockAudio.d=1;const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}}catch(e){}}
+['touchstart','click'].forEach(e=>document.addEventListener(e,unlockAudio,{passive:true}));
+function beep(f){try{const a=actx(),o=a.createOscillator(),g=a.createGain();o.frequency.value=f||880;g.gain.value=.15;o.connect(g);g.connect(a.destination);o.start();setTimeout(()=>o.stop(),260)}catch(e){}}
+let bTimer;
+function banner(icon,text,crit,speak){$('bi').textContent=icon;$('bt').textContent=text;$('banner').className=crit?'crit':'';$('banner').style.display='flex';clearTimeout(bTimer);bTimer=setTimeout(hideBanner,crit?12000:7000);beep(crit?980:660);if(speak!==false)say(text);if(crit&&navigator.vibrate)navigator.vibrate([300,120,300])}
+function hideBanner(){$('banner').style.display='none';try{speechSynthesis.cancel()}catch(e){}}
+const cool=(k,ms)=>{const n=Date.now();if(n-(lastAlert[k]||0)<ms)return false;lastAlert[k]=n;return true};
+/* ---------- screens ---------- */
+const OB=[['📡','رادار حقيقي على الطريق','بنجيب الرادارات ونقاط التفتيش وبوابات الطريق وحدود السرعة من خريطة OpenStreetMap، وبينبهك قبلها بمسافة كافية.'],['🚨','طوارئ بضغطة','زرار طوارئ بيبعت موقعك لغرفة العمليات وواتساب. وبيتحس بالصدمة تلقائيًا وبيبلّغ لو ماردّتش.'],['🖥','غرفة عمليات لحظية','كل شاحنات الأسطول على خريطة واحدة بالسرعة والحالة والتنبيهات، وتقرير تصدّره في أي وقت.']];
+let obI=0;
+function obShow(){const o=OB[obI],last=obI==OB.length-1;$('onb').innerHTML=`<div class="ob-i">${o[0]}</div><h2>${o[1]}</h2><p class="t">${o[2]}</p><div class="dots">${OB.map((_,i)=>`<i class="${i==obI?'on':''}"></i>`).join('')}</div><button class="btn" onclick="obNext()">${last?'يلا نبدأ':'التالي'}</button>${last?'':'<button class="btn sec" onclick="obDone()" style="background:none;border:0;color:var(--mu);width:auto">تخطي</button>'}`}
+function obNext(){if(++obI>=OB.length)obDone();else obShow()}
+function obDone(){ST.onb=1;save();$('onb').style.display='none';showSetup()}
+function showSetup(){$('setup').style.display='flex';if(ST.fleet){$('fleet').value=ST.fleet;fmode('join',true)}else{fmode('new')}$('tname').value=ST.name||'';$('cargo0').value=ST.cargo||$('cargo0').options[0].value;rolePick(ST.role||'driver')}
+function genCode(){const a=new Uint8Array(24);crypto.getRandomValues(a);const al='abcdefghjkmnpqrstuvwxyz23456789';return Array.from(a,x=>al[x%al.length]).join('')}
+function fmode(m,keep){document.querySelectorAll('#fsel button').forEach(b=>b.classList.toggle('on',b.dataset.m==m));if(m=='new'){$('fleet').value=genCode();$('fleet').readOnly=true;$('flbl').textContent='كود أسطولك الجديد (اتولد عشوائي، 24 حرف). احفظه وابعته لسواقينك.'}else{if(!keep)$('fleet').value='';$('fleet').readOnly=false;$('flbl').textContent='اكتب كود الأسطول اللي استلمته من مديرك (12 حرف على الأقل)'}}
+function rolePick(r){ROLE=r;document.querySelectorAll('#rsel button').forEach(b=>b.classList.toggle('on',b.dataset.r==r));$('cargo0').style.display=$('cargolbl').style.display=r=='driver'?'':'none'}
+function finishSetup(){const f=$('fleet').value.trim().replace(/[^A-Za-z0-9_-]/g,'');if(f.length<12){alert('كود الأسطول لازم يكون 12 حرف أو رقم على الأقل');return}const n=$('tname').value.trim().replace(/[.#$\/\[\]]/g,'');if(!n){alert('اكتب اسمك أو رقم الشاحنة');return}
+ ST.fleet=f;ST.name=n;ST.role=ROLE;ST.cargo=$('cargo0').value;save();$('setup').style.display='none';boot(false,true)}
+function startDemo(){ST.fleet='';ST.name='تجربة';ST.role='driver';$('setup').style.display='none';boot(true,true)}
+function tab(i){[0,1,2].forEach(k=>{$('v'+k).classList.toggle('on',k==i);$('n'+k).classList.toggle('on',k==i)});setTimeout(()=>{map&&map.invalidateSize();opsmap&&opsmap.invalidateSize()},120);if(i==1){ensureTrucks();renderOps.fit=0;renderOps()}if(i==2)fillSet()}
+/* ---------- settings ---------- */
+function fillSet(){$('s_name').value=ST.name||'';$('cargo').value=ST.cargo||$('cargo').options[0].value;$('cap').value=ST.cap||70;$('dnum').value=ST.dnum||'';$('sw_v').classList.toggle('on',!ST.voiceOff);$('sw_w').classList.toggle('on',!ST.wakeOff);
+ $('fl_info').innerHTML=live?`أنت في أسطول بكود:<br><span class="codebox" style="display:block;direction:ltr;text-align:left;color:var(--tx)">${esc(FLEET)}</span><br>الكود هو الحماية الوحيدة لبياناتك، متشاركوش غير مع سواقينك.`:'مش داخل أسطول (وضع تجربة).'}
+function saveSet(){ST.name=$('s_name').value.trim().replace(/[.#$\/\[\]]/g,'')||ST.name;ST.cargo=$('cargo').value;ST.cap=+$('cap').value;ST.dnum=$('dnum').value.replace(/\D/g,'');save();TNAME=ST.name;checks()}
+function tog(k){if(k=='voice')ST.voiceOff=!ST.voiceOff;else ST.wakeOff=!ST.wakeOff;save();fillSet();if(k=='wake'&&!ST.wakeOff)wakeLock()}
+function inviteURL(){return location.origin+location.pathname+'#fleet='+encodeURIComponent(FLEET)}
+function shareFleet(){const t='انضم لأسطولنا على تطبيق درب. افتح الرابط واكتب اسمك:\n'+inviteURL();if(navigator.share)navigator.share({text:t}).catch(()=>{});else window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')}
+function copyCode(){navigator.clipboard&&navigator.clipboard.writeText(FLEET).then(()=>banner('✅','تم نسخ الكود',false,false))}
+function leave(){if(!confirm('تخرج من الأسطول على الجهاز ده؟'))return;delete ST.fleet;save();location.hash='';location.reload()}
+/* ---------- maps ---------- */
+const TILE='https://tile.openstreetmap.org/{z}/{x}/{y}.png',ATTR='© OpenStreetMap';
+function mkMap(el,c,z){const m=L.map(el,{zoomControl:false,preferCanvas:true,attributionControl:true}).setView(c,z);L.tileLayer(TILE,{attribution:ATTR,maxZoom:19,className:'dk'}).addTo(m);m.attributionControl.setPrefix(false);return m}
+function icon(h,cls){return L.divIcon({html:h,className:'',iconSize:[34,34],iconAnchor:[17,17]})}
+function initMaps(){map=mkMap('map',pos,13);opsmap=mkMap('opsmap',[30.0,31.4],8);
+ meM=L.marker(pos,{icon:L.divIcon({html:'<div class="me"></div>',className:'',iconSize:[22,22],iconAnchor:[11,11]}),zIndexOffset:900}).addTo(map);
+ map.on('dragstart',()=>{followMe=false});
+ ['C','K','B'].forEach(k=>{layG[k]={map:L.layerGroup(),ops:L.layerGroup()}});
+ applyLayers();map.on('moveend',drawPOI);opsmap.on('moveend',drawPOI)}
+function recenter(){followMe=true;map.setView(pos,Math.max(map.getZoom(),15))}
+function lay(k){LAY[k]=!LAY[k];document.querySelectorAll('[data-l="'+k+'"]').forEach(b=>b.classList.toggle('on',LAY[k]));applyLayers()}
+let ttLayers=[];
+function applyLayers(){['C','K','B'].forEach(k=>{[['map',map],['ops',opsmap]].forEach(([n,m])=>{if(LAY[k]){layG[k][n].addTo(m)}else m.removeLayer(layG[k][n])})});
+ ttLayers.forEach(l=>l.remove());ttLayers=[];if(LAY.T)[map,opsmap].forEach(m=>{const l=L.tileLayer('https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key='+TT_KEY,{opacity:.85,maxZoom:19,maxNativeZoom:16});l.addTo(m);ttLayers.push(l)});drawPOI()}
+/* ---------- real POI data: OSM (baked + live Overpass tiles) ---------- */
+let POI=[],poiKey=new Set(),grid={};
+const BB=[[29.5,30.8,30.4,32.6],[30.4,29.5,31.6,32.0],[29.5,32.6,30.4,33.3]];
+function addPOI(a){const k=a[0]+','+a[1];if(poiKey.has(k))return;poiKey.add(k);const p={la:a[0],lo:a[1],t:a[2],m:a[3]||0};POI.push(p);const g=Math.floor(p.la*20)+':'+Math.floor(p.lo*20);(grid[g]=grid[g]||[]).push(p)}
+(window.BAKED||[]).forEach(addPOI);
+function near(p,rad){const out=[],gi=Math.floor(p[0]*20),gj=Math.floor(p[1]*20),n=Math.ceil(rad/5000);for(let i=-n;i<=n;i++)for(let j=-n;j<=n;j++){const a=grid[(gi+i)+':'+(gj+j)];if(a)a.forEach(x=>{const d=dist(p,[x.la,x.lo]);if(d<=rad)out.push({p:x,d})})}return out}
+const OVP=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+let ovBusy=false,ovFail=0,ovCells=(()=>{try{return JSON.parse(localStorage.darbCells||'{}')}catch(e){return{}}})();
+async function overpass(q){for(const ep of OVP){try{const r=await fetch(ep,{method:'POST',body:'data='+encodeURIComponent(q)});if(r.ok){const j=await r.json();return j}}catch(e){}}return null}
+async function loadCell(){if(ovBusy||Date.now()<ovFail||!gotFix)return;const ci=Math.floor(pos[0]*2),cj=Math.floor(pos[1]*2),k=ci+':'+cj,s=ci/2,w=cj/2,n=s+.5,e=w+.5;
+ if(BB.some(b=>s>=b[0]&&n<=b[2]&&w>=b[1]&&e<=b[3]))return;if(ovCells[k]&&Date.now()-ovCells[k]<7*864e5)return;
+ ovBusy=true;const bb=[s,w,n,e].join(',');
+ const j=await overpass(`[out:json][timeout:40];(node["highway"="speed_camera"](${bb});node["enforcement"="maxspeed"](${bb});node["military"="checkpoint"](${bb});node["barrier"="toll_booth"](${bb}););out center tags;`);ovBusy=false;
+ if(!j){ovFail=Date.now()+90000;$('ntxt')&&0;return}
+ try{const old=JSON.parse(localStorage.darbPoi||'[]');j.elements.forEach(x=>{const a=[Math.round((x.lat||x.center.lat)*1e5)/1e5,Math.round((x.lon||x.center.lon)*1e5)/1e5,(x.tags.highway=='speed_camera'||x.tags.enforcement)?'c':x.tags.military?'k':'t',parseInt(x.tags.maxspeed)||0];addPOI(a);old.push(a)});localStorage.darbPoi=JSON.stringify(old.slice(-4000));ovCells[k]=Date.now();localStorage.darbCells=JSON.stringify(ovCells)}catch(e){}drawPOI()}
+try{JSON.parse(localStorage.darbPoi||'[]').forEach(addPOI)}catch(e){}
+const POIS={c:['📷','#f59e0b','رادار سرعة'],k:['🛑','#ef4444','نقطة تفتيش / كمين مسجل'],t:['💰','#64748b','بوابة / محصل']};
+function drawPOI(){if(!map)return;const lk={c:'C',k:'K',t:'B'};[['map',map],['ops',opsmap]].forEach(([n,m])=>{const b=m.getBounds().pad(.1),z=m.getZoom();Object.values(layG).forEach(g=>g[n].clearLayers());if(z<10)return;let c=0;for(const p of POI){if(!b.contains([p.la,p.lo]))continue;if(++c>700)break;const t=POIS[p.t];L.circleMarker([p.la,p.lo],{radius:z>13?8:5,color:'#0b1220',weight:2,fillColor:t[1],fillOpacity:1}).bindPopup(`${t[0]} ${t[2]}${p.m?'<br>الحد: '+p.m+' كم/س':''}<br><small style="color:#8a97b0">المصدر: OpenStreetMap</small>`).addTo(layG[lk[p.t]][n])}})}
+/* ---------- road speed limit (OSM) ---------- */
+let roadLim=null,lastRoadQ=0,lastRoadPos=null;
+async function roadLimit(){if(!gotFix||speed<5)return;if(Date.now()-lastRoadQ<25000)return;if(lastRoadPos&&dist(pos,lastRoadPos)<150)return;lastRoadQ=Date.now();lastRoadPos=pos.slice();
+ const j=await overpass(`[out:json][timeout:15];way(around:25,${pos[0].toFixed(5)},${pos[1].toFixed(5)})["highway"]["maxspeed"];out tags 3;`);if(!j)return;
+ const v=(j.elements||[]).map(e=>parseInt(e.tags.maxspeed)).filter(x=>x>0&&x<=140);roadLim=v.length?Math.min(...v):null;checks()}
+/* ---------- driver checks ---------- */
+function effLimit(){const cap=ST.cap||70;return roadLim?Math.min(roadLim,cap):cap}
+function checks(){const cap=ST.cap||70,lim=effLimit(),over=speed>lim+3;
+ $('spd').textContent=Math.round(speed);$('spd').classList.toggle('over',over);
+ const sg=$('sign');sg.className='sign'+(over?' over':'');sg.textContent=lim;sg.title=roadLim&&roadLim<cap?'حد الطريق':'حد شاحنتك';
+ if(!gotFix){$('nl').textContent='الموقع';$('nv').textContent=GPSERR?'الموقع مقفول':'بدور على GPS...';$('ns').textContent=GPSERR?'اضغط على GPS فوق بعد ما تسمح بالموقع':'اتأكد إن الموقع شغال';return}
+ const cand=near(pos,1500).filter(x=>{if(x.p.t=='t')return x.d<1200;if(heading==null||speed<8)return x.d<600;let da=Math.abs(((bearing(pos,[x.p.la,x.p.lo])-heading+540)%360)-180);return da<65}).sort((a,b)=>a.d-b.d)[0];
+ if(cand){const t=POIS[cand.p.t],lim2=cand.p.m;$('nl').textContent=t[2];$('nv').textContent=t[0]+' '+fmtD(cand.d);$('ns').textContent=lim2?'الحد '+lim2+' كم/س':'قدامك';
+  const key=cand.p.la+','+cand.p.lo;
+  if(cand.p.t=='c'){const L2=lim2?Math.min(lim2,cap):cap;if(cand.d<800&&speed>L2+3&&cool('r'+key,60000))banner('📷','رادار بعد '+fmtD(cand.d)+'. السرعة المسموحة '+L2+' وسرعتك '+Math.round(speed)+'. هدّي.',true);else if(cand.d<1000&&cool('rs'+key,180000))banner('📷','رادار قدامك بعد '+fmtD(cand.d),false)}
+  else if(cand.p.t=='k'&&cand.d<900&&cool('k'+key,240000))banner('🛑','نقطة تفتيش قدامك بعد '+fmtD(cand.d),false)}
+ else{$('nl').textContent='قدامك';$('nv').textContent='الطريق خالي';$('ns').textContent='مفيش رادار أو نقطة قريبة'}
+ if(over&&speed>cap+3&&cool('cap',60000))banner('🚛','تخطيت سرعة الشاحنة ('+cap+'). هدّي السرعة.',true);
+ // community hazards from fleet
+ Object.values(events).forEach(v=>{if(!gotFix||v.lat==null||v.truck===TNAME||Date.now()-v.ts>3*3600e3)return;if(['hazard','checkpoint','radar','closed','stopped','bump','fog','sos','impact','crash'].includes(v.type)&&dist(pos,[v.lat,v.lon])<900&&cool('h'+v.k,600000))banner((EVT[v.type]||['⚠️'])[0],(EVT[v.type]||['','بلاغ'])[1]+' قدامك بعد '+fmtD(dist(pos,[v.lat,v.lon]))+' (بلاغ من '+v.truck+')',false)})}
+/* ---------- firebase (streaming, low data) ---------- */
+function fbPut(p,o){return fetch(FB+p+'.json',{method:'PUT',body:JSON.stringify(o)}).catch(()=>{})}
+function fbPost(p,o){return fetch(FB+p+'.json',{method:'POST',body:JSON.stringify(o)}).catch(()=>{})}
+let battery=null;try{navigator.getBattery&&navigator.getBattery().then(b=>{battery=b})}catch(e){}
+function pushPos(force){if(!live||ROLE!='driver'||!gotFix)return;const n=Date.now(),gap=speed>3?5000:20000;if(!force&&n-lastPush<gap)return;lastPush=n;
+ fbPut('/fleets/'+FLEET+'/trucks/'+encodeURIComponent(TNAME),{lat:+pos[0].toFixed(6),lon:+pos[1].toFixed(6),speed:Math.round(speed),hd:heading==null?null:Math.round(heading),cargo:ST.cargo||'',cap:ST.cap||70,did:DID,over:speed>effLimit()+3,bat:battery?Math.round(battery.level*100):null,ts:n})}
+function pushEv(type,text,withPos){if(!live)return;const o={ts:Date.now(),type,truck:TNAME,text};if(withPos&&gotFix){o.lat=pos[0];o.lon=pos[1]}fbPost('/fleets/'+FLEET+'/events',o)}
+function setPath(obj,path,val){const p=path.split('/').filter(Boolean);if(!p.length)return val==null?{}:val;let o=obj;for(let i=0;i<p.length-1;i++){if(typeof o[p[i]]!='object'||o[p[i]]==null)o[p[i]]={};o=o[p[i]]}if(val==null)delete o[p[p.length-1]];else o[p[p.length-1]]=val;return obj}
+function stream(url,get,set,onupd){let es;const open=()=>{es=new EventSource(url);es.addEventListener('put',e=>{try{const d=JSON.parse(e.data);set(setPath(get(),d.path,d.data));onupd();net(true)}catch(x){}});es.addEventListener('patch',e=>{try{const d=JSON.parse(e.data);let o=get();Object.entries(d.data||{}).forEach(([k,v])=>{o=setPath(o,d.path+'/'+k,v)});set(o);onupd();net(true)}catch(x){}});es.onerror=()=>{net(false)}};open()}
+function net(ok){$('ndot').className='dot '+(ok?'ok':'bad');$('ntxt').textContent=ok?'متصل':'مفيش إنترنت'}
+function startFleet(){if(!live)return;
+ if(ROLE=='ops')ensureTrucks();
+ stream(FB+'/fleets/'+FLEET+'/events.json?orderBy="$key"&limitToLast=40',()=>events,v=>{events=v&&typeof v=='object'?v:{}},()=>{Object.keys(events).forEach(k=>{events[k].k=k});onEvents()})}
+function ensureTrucks(){if(!live||trucksOn)return;trucksOn=true;stream(FB+'/fleets/'+FLEET+'/trucks.json',()=>trucks,v=>{trucks=v&&typeof v=='object'?v:{}},()=>{renderOps()})}
+function onEvents(){Object.values(events).forEach(v=>{if(seenEv[v.k])return;seenEv[v.k]=1;if(Date.now()-v.ts>6*3600e3)return;
+  if(v.lat!=null&&!evMk[v.k]&&opsmap){const e=EVT[v.type]||['⚠️',''];evMk[v.k]=1;[map,opsmap].forEach(m=>L.marker([v.lat,v.lon],{icon:L.divIcon({html:`<div class="mk" style="background:#b91c1c">${e[0]}</div>`,className:'',iconSize:[34,34],iconAnchor:[17,17]})}).addTo(m).bindPopup(`${e[0]} ${esc(v.text)}<br><small>${esc(v.truck)} · ${hhmm(v.ts)}</small>`))}
+  if(v.truck!==TNAME&&Date.now()-v.ts<30000&&v.type!='info'&&v.type!='traffic'&&(ROLE=='driver'||['sos','crash','tow','impact','hazard'].includes(v.type))){const e=EVT[v.type]||['⚠️'];banner(e[0],'تنبيه من '+v.truck+': '+v.text,['sos','crash','impact'].includes(v.type))}});checks();renderOps()}
+/* ---------- ops dashboard ---------- */
+function renderOps(){if(!$('v1').classList.contains('on')&&!opsmap)return;const now=Date.now();
+ const rows=Object.entries(trucks).filter(([k,t])=>t&&t.lat!=null&&now-t.ts<24*3600e3).map(([k,t])=>({n:k,t,age:now-t.ts,online:now-t.ts<45000})).sort((a,b)=>b.t.ts-a.t.ts);
+ const on=rows.filter(r=>r.online),sp=on.filter(r=>r.t.over),evs=Object.values(events).sort((a,b)=>b.ts-a.ts),day=new Date();day.setHours(0,0,0,0);
+ $('k1').textContent=on.length;$('k2').textContent=sp.length;$('k3').textContent=evs.filter(e=>e.ts>=day&&e.type!='info').length;$('k4').textContent=on.length?Math.round(on.reduce((s,r)=>s+(r.t.speed||0),0)/on.length):'--';
+ $('fcode').textContent=live?'أسطول: '+FLEET.slice(0,4)+'••••'+FLEET.slice(-3):'وضع تجربة';
+ $('tlist').innerHTML=rows.length?rows.map(r=>{const st=!r.online?['t-off','غير متصل']:r.t.over?['t-bad','سرعة زيادة']:['t-ok','طبيعي'];return `<div class="card tr" data-n="${esc(r.n)}"><div class="av">🚛</div><div class="m"><b>${esc(r.n)}</b><small>${esc(r.t.cargo||'')}${r.t.bat!=null?' · 🔋'+r.t.bat+'%':''} · آخر إشارة منذ ${ago(r.t.ts)}</small></div><div class="sp2">${r.t.speed||0}<small>كم/س</small></div><span class="tag ${st[0]}">${st[1]}</span></div>`}).join(''):`<div class="empty">${live?'مفيش شاحنات متصلة حاليًا.<br>خلّي السواقين يفتحوا التطبيق ويدخلوا بنفس كود الأسطول.':'وضع تجربة: ادخل بكود أسطول علشان تشوف شاحناتك.'}</div>`;
+ $('elist').innerHTML=evs.length?evs.slice(0,25).map(v=>{const e=EVT[v.type]||['⚠️',''];return `<div class="ev" data-i="${v.k}" style="${v.lat!=null?'cursor:pointer':''}"><span class="ei">${e[0]}</span><div><b>${esc(v.truck)}</b>: ${esc(v.text)}<small>${hhmm(v.ts)} · منذ ${ago(v.ts)}</small></div></div>`}).join(''):'<div class="empty">مفيش أحداث لسه.</div>';
+ if(!opsmap)return;const seen={};rows.forEach(r=>{const t=r.t,ll=[t.lat,t.lon],cls=!r.online?'stale':t.over?'over':'';seen[r.n]=1;const ic=L.divIcon({html:`<div class="mk tk ${cls}">🚛</div><div class="lab">${esc(r.n)} · ${t.speed||0}</div>`,className:'',iconSize:[34,34],iconAnchor:[17,17]});if(!truckMk[r.n])truckMk[r.n]=L.marker(ll,{icon:ic}).addTo(opsmap);else{truckMk[r.n].setLatLng(ll);truckMk[r.n].setIcon(ic)}});
+ Object.keys(truckMk).forEach(k=>{if(!seen[k]){truckMk[k].remove();delete truckMk[k]}});
+ if(!renderOps.fit&&rows.length){renderOps.fit=1;const b=L.latLngBounds(rows.map(r=>[r.t.lat,r.t.lon]));opsmap.fitBounds(b.pad(.4),{maxZoom:13})}}
+document.addEventListener('click',e=>{const t=e.target.closest('.tr[data-n]');if(t){focusT(t.dataset.n);return}const v=e.target.closest('.ev[data-i]');if(v&&events[v.dataset.i]&&events[v.dataset.i].lat!=null&&opsmap)opsmap.flyTo([events[v.dataset.i].lat,events[v.dataset.i].lon],16)});
+function focusT(n){const t=trucks[n];if(t&&opsmap)opsmap.flyTo([t.lat,t.lon],15)}
+function exportCsv(){const rows=[['الوقت','الشاحنة','النوع','التفاصيل','lat','lon']].concat(Object.values(events).sort((a,b)=>a.ts-b.ts).map(v=>[new Date(v.ts).toISOString(),v.truck,(EVT[v.type]||['',v.type])[1],v.text,v.lat==null?'':v.lat,v.lon==null?'':v.lon]));
+ const csv='\ufeff'+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='darb-events-'+new Date().toISOString().slice(0,10)+'.csv';a.click()}
+setInterval(()=>{if($('v1').classList.contains('on'))renderOps()},5000);
+/* ---------- reports, sos ---------- */
+function openSheet(){$('rgrid').innerHTML=['hazard','checkpoint','radar','closed','stopped','bump','fog','traffic'].map(k=>`<button onclick="rep('${k}')"><span class="i">${EVT[k][0]}</span>${EVT[k][1]}</button>`).join('');$('rsheet').classList.add('on')}
+function closeSheet(){$('rsheet').classList.remove('on')}
+function rep(k){closeSheet();pushEv(k,EVT[k][1]+' (بلاغ سائق)',true);L.marker(pos,{icon:L.divIcon({html:`<div class="mk" style="background:#b91c1c">${EVT[k][0]}</div>`,className:'',iconSize:[34,34],iconAnchor:[17,17]})}).addTo(map);banner('✅','تم تسجيل البلاغ وإبلاغ باقي السواقين',false)}
+function sosLink(){return `https://www.openstreetmap.org/?mlat=${pos[0].toFixed(5)}&mlon=${pos[1].toFixed(5)}#map=16/${pos[0].toFixed(5)}/${pos[1].toFixed(5)}`}
+function sos(t,type){pushEv(type||(/ونش/.test(t)?'tow':'sos'),t,true);const n=(ST.dnum||'').replace(/\D/g,'');const msg=`🚨 ${t}\nالسائق: ${TNAME}\nالحمولة: ${ST.cargo||''}\nموقعي: ${sosLink()}`;
+ if(n)window.open('https://wa.me/'+n+'?text='+encodeURIComponent(msg),'_blank');else if(!live)banner('ℹ️','سجّل رقم واتساب للطوارئ من الإعدادات علشان الرسالة تتبعت',false,false);
+ banner(type=='crash'||!/ونش/.test(t)?'🆘':'🛠️',live?'تم إبلاغ غرفة العمليات'+(n?' وتجهيز رسالة واتساب':'. سجّل رقم واتساب من الإعدادات لإرسال الموقع'):'تم تجهيز الرسالة',true)}
+(function(){const b=$('sosb');let tm;const st=e=>{e.preventDefault();b.classList.add('hold');tm=setTimeout(()=>{b.classList.remove('hold');sos('طوارئ: السائق محتاج مساعدة فورية')},1200)},en=()=>{clearTimeout(tm);b.classList.remove('hold')};['touchstart','mousedown'].forEach(e=>b.addEventListener(e,st));['touchend','touchcancel','mouseup','mouseleave'].forEach(e=>b.addEventListener(e,en))})();
+let crashT=null;
+function crashStart(){if(crashT)return;let c=15;$('cn').textContent=c;$('crash').style.display='flex';beep(1000);say('اتحس بصدمة قوية. لو بخير اضغط أنا بخير');crashT=setInterval(()=>{c--;$('cn').textContent=c;beep(1000);if(c<=0){clearInterval(crashT);crashT=null;$('crash').style.display='none';sos('صدمة قوية والسائق مردّش','crash')}},1000)}
+function crashOk(){clearInterval(crashT);crashT=null;$('crash').style.display='none';pushEv('info','الصدمة اتأكد إن السائق بخير',false)}
+/* ---------- motion & gps ---------- */
+function harsh(type,txt){banner(EVT[type][0],txt,type!='motion');pushEv(type,txt,true)}
+function speedEvents(s){const n=Date.now();if(prevSp!==null&&n-prevT>500&&n-prevT<4000){const a=((s-prevSp)/3.6)/((n-prevT)/1000);if(n-lastMot>20000){if(a<-3.5&&prevSp>25){lastMot=n;harsh('brake','فرملة عنيفة')}else if(a>3){lastMot=n;harsh('accel','تسارع عنيف')}}}prevSp=s;prevT=n}
+let motionOn=false;
+function motionGo(){if(motionOn)return;motionOn=true;window.addEventListener('devicemotion',ev=>{const a=ev.acceleration;if(!a||a.x==null||demo)return;const m=Math.hypot(a.x||0,a.y||0,a.z||0),n=Date.now();if(n-lastMot<20000||n-lastMove>15000)return;if(m>25){lastMot=n;crashStart()}else if(m>8){lastMot=n;harsh('motion','حركة عنيفة / انعطاف حاد')}})}
+function motionAsk(){try{DeviceMotionEvent.requestPermission().then(r=>{if(r=='granted'){motionGo();$('cM').style.display='none';banner('✅','حساس الصدمات اشتغل',false,false)}else banner('⚠️','لازم تسمح بحساس الحركة من إعدادات سفاري',false,false)}).catch(()=>{})}catch(e){}}
+function motionInit(gesture){if(typeof DeviceMotionEvent!=='undefined'&&DeviceMotionEvent.requestPermission){if(gesture)motionAsk();else $('cM').style.display='inline-flex'}else motionGo()}
+async function wakeLock(){try{if(!ST.wakeOff)await navigator.wakeLock.request('screen')}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)wakeLock()});
+function update(p,s,h){const first=!gotFix;gotFix=true;GPSERR=false;if(s>10)lastMove=Date.now();pos=p;speed=Math.max(0,s);if(h!=null&&!isNaN(h)&&s>3)heading=h;meM.setLatLng(p);if(followMe)map.setView(p,first?15:map.getZoom(),{animate:!first});$('gdot').className='dot ok';$('gtxt').textContent='GPS';checks();speedEvents(speed);pushPos();loadCell();roadLimit();ttCycle()}
+function startGPS(){if(!navigator.geolocation){banner('📍','الجهاز مش بيدعم GPS',true,false);return}
+ if(wid!=null)navigator.geolocation.clearWatch(wid);GPSERR=false;
+ $('gdot').className='dot warn';$('gtxt').textContent='بدور على GPS';
+wid=navigator.geolocation.watchPosition(p=>update([p.coords.latitude,p.coords.longitude],(p.coords.speed||0)*3.6,p.coords.heading),e=>{GPSERR=e.code==1;checks();$('gdot').className='dot bad';$('gtxt').textContent=e.code==1?'GPS مقفول':'مفيش إشارة';banner('📍','محتاج تسمح للتطبيق بالموقع من إعدادات المتصفح علشان يشتغل',true,false)},{enableHighAccuracy:true,maximumAge:1000,timeout:20000})}
+/* demo sim: clearly labeled, not real data */
+function startSim(){const R=[[30.0626,31.4400],[30.045,31.5],[30.03,31.57],[30.01,31.65],[29.98,31.74]];let i=0,f=0;setInterval(()=>{const sp=72+Math.sin(Date.now()/4000)*14;f+=.02;if(f>=1){f=0;i=(i+1)%(R.length-1)}const a=R[i],b=R[i+1];update([a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f],sp,bearing(a,b))},1000)}
+/* ---------- traffic (TomTom, cached) ---------- */
+const TI={1:'حادث',2:'ضباب',3:'ظروف خطرة',4:'أمطار',6:'جليد',7:'مسار مقفول',8:'طريق مقفول',9:'أعمال طرق',11:'فيضان',14:'مركبة معطلة'};
+let incMk=[],lastInc=0,lastFlow=0,lastFlowAlert=0,lastIncPos=null;
+async function ttCycle(){if(!gotFix||document.hidden)return;const n=Date.now();
+ try{if(speed>5&&n-lastFlow>240000){lastFlow=n;const r=await (await fetch('https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?point='+pos[0].toFixed(4)+','+pos[1].toFixed(4)+'&key='+TT_KEY)).json(),f=r.flowSegmentData;
+   if(f){const ratio=f.currentSpeed/f.freeFlowSpeed;$('tf').textContent='السرعة على الطريق '+f.currentSpeed+' كم/س (الطبيعي '+f.freeFlowSpeed+')'+(ratio<.5?' · زحمة':ratio<.8?' · بطيء':' · سالك');
+    if((ratio<.5||f.roadClosure)&&n-lastFlowAlert>300000){lastFlowAlert=n;banner('🚦','زحمة على الطريق: السرعة الفعلية '+f.currentSpeed+' بدل '+f.freeFlowSpeed+' كم/س',false);pushEv('traffic','زحمة: '+f.currentSpeed+' بدل '+f.freeFlowSpeed+' كم/س',true)}}
+   else $('tf').textContent='مفيش بيانات مرور للنقطة دي'}
+  if(n-lastInc>600000||(lastIncPos&&dist(pos,lastIncPos)>8000)){lastInc=n;lastIncPos=pos.slice();const b=[pos[1]-.15,pos[0]-.1,pos[1]+.15,pos[0]+.1].map(x=>x.toFixed(3)).join(',');
+   const r=await (await fetch('https://api.tomtom.com/traffic/services/5/incidentDetails?key='+TT_KEY+'&bbox='+b+'&fields=%7Bincidents%7Btype,geometry%7Btype,coordinates%7D,properties%7BiconCategory,magnitudeOfDelay,events%7Bdescription%7D%7D%7D%7D&language=ar-EG')).json();
+   incMk.forEach(m=>m.remove());incMk=[];(r.incidents||[]).forEach(i=>{const g=i.geometry;if(!g)return;const c=g.type=='Point'?g.coordinates:g.coordinates[0];if(!c)return;const cat=i.properties.iconCategory;if(cat==9&&!i.properties.magnitudeOfDelay)return;const d=(i.properties.events&&i.properties.events[0]&&i.properties.events[0].description)||TI[cat]||'حدث مروري';
+    [map,opsmap].forEach(m=>incMk.push(L.marker([c[1],c[0]],{icon:L.divIcon({html:'<div class="mk" style="background:#7c3aed">🚧</div>',className:'',iconSize:[34,34],iconAnchor:[17,17]})}).addTo(m).bindPopup('🚧 '+esc(d)+'<br><small>TomTom</small>')));
+    if(dist(pos,[c[1],c[0]])<2500&&(i.properties.magnitudeOfDelay>=3||cat==1||cat==8)&&cool('i'+c,600000))banner('🚧','حدث على الطريق قدامك: '+d,false)})}}catch(e){}}
+setInterval(ttCycle,30000);
+/* ---------- boot ---------- */
+async function boot(isDemo,gest){demo=isDemo;FLEET=ST.fleet||'';TNAME=ST.name||'سائق';ROLE=ST.role||'driver';live=FLEET.length>=12&&!demo;
+ if(live&&ROLE=='driver'){try{const t=await (await fetch(FB+'/fleets/'+FLEET+'/trucks/'+encodeURIComponent(TNAME)+'.json')).json();if(t&&t.did&&t.did!==DID&&Date.now()-t.ts<90000){alert('الاسم ده شغال دلوقتي على جهاز تاني. اختار اسم مختلف للشاحنة.');delete ST.name;save();$('setup').style.display='flex';showSetup();return}}catch(e){}}
+ $('app').classList.add('on');initMaps();net(navigator.onLine);fillSet();
+ if(ROLE=='ops'){tab(1);$('n0').style.display='none';$('gpsp').style.display='none'}else{tab(0);motionInit(gest);wakeLock();demo?startSim():startGPS()}
+ if(live){startFleet();if(ROLE=='driver'){const jk=FLEET+'|'+TNAME;if(ST.jk!==jk||Date.now()-(ST.jt||0)>43200000){ST.jk=jk;ST.jt=Date.now();save();setTimeout(()=>pushEv('info','انضم للأسطول',false),1500)}}}
+ if(demo)banner('ℹ️','وضع تجربة: رحلة محاكاة. الرادارات اللي بتظهر حقيقية من OpenStreetMap لكن الموقع والسرعة مش حقيقيين.',false,false);
+ if(!live&&!demo){}
+ const q=new URLSearchParams(location.search);if(q.get('tab'))tab(+q.get('tab'))}
+window.addEventListener('online',()=>net(true));window.addEventListener('offline',()=>{net(false);banner('📴','مفيش إنترنت. الرادارات المحفوظة لسه شغالة، لكن الزحمة والأسطول واقفين لحد ما النت يرجع.',false,false)});
+(function init(){
+ const m=location.hash.match(/fleet=([^&]+)/);if(m){ST.fleet=decodeURIComponent(m[1]).replace(/[^A-Za-z0-9_-]/g,'');save();try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}}
+ const q=new URLSearchParams(location.search);
+ if(q.get('fleet')){ST.fleet=q.get('fleet').replace(/[^A-Za-z0-9_-]/g,'');ST.name=q.get('name')||ST.name||'سائق';ST.role=q.get('role')||ST.role||'driver';ST.cargo=ST.cargo||'وقود (فئة 3)';ST.onb=1;save()}
+ setTimeout(()=>{$('splash').style.opacity=0;setTimeout(()=>$('splash').style.display='none',500);
+  if(q.get('auto')){ST.onb=1;demo=q.get('auto')=='sim';boot(demo);return}
+  if(ST.fleet&&ST.name&&ST.onb&&!m){boot(false)}else if(!ST.onb){$('onb').style.display='flex';obShow()}else showSetup()},q.get('fast')?100:1400)})();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script></body></html>
