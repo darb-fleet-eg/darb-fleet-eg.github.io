@@ -109,13 +109,13 @@ nav button.on{color:var(--gr)}
  <img src="icon.svg" width="64" height="64" style="border-radius:16px" alt="">
  <h2>إعداد الأسطول</h2>
  <p class="t" style="margin-bottom:4px">كل شاحنات شركتك بتشتغل بنفس كود الأسطول. الكود هو اللي بيحمي بياناتك، فلازم يفضل عندك أنت وسواقينك بس.</p>
- <div class="seg" id="fsel"><button class="on" data-m="new" onclick="fmode('new')">إنشاء أسطول جديد</button><button data-m="join" onclick="fmode('join')">عندي كود</button></div>
+ <div id="fgrp"><div class="seg" id="fsel"><button class="on" data-m="new" onclick="fmode('new')">إنشاء أسطول جديد</button><button data-m="join" onclick="fmode('join')">عندي كود</button></div>
  <div class="lbl" id="flbl">كود أسطولك الجديد (اتولد عشوائي، 24 حرف)</div>
- <input class="in codebox" id="fleet" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="كود الأسطول">
- <div class="lbl">اسمك أو رقم الشاحنة</div>
- <input class="in" id="tname" maxlength="24" placeholder="مثال: شاحنة 5 - أحمد">
+ <input class="in codebox" id="fleet" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="كود الأسطول"></div>
+ <div id="ngrp"><div class="lbl">اسمك أو رقم الشاحنة</div>
+ <input class="in" id="tname" maxlength="24" placeholder="مثال: شاحنة 5 - أحمد"></div>
  <div class="lbl">دورك</div>
- <div class="seg" id="rsel"><button class="on" data-r="driver" onclick="rolePick('driver')">🚛 سائق</button><button data-r="ops" onclick="rolePick('ops')">🖥 مدير أسطول</button></div>
+ <div class="seg" id="rsel"><button class="on" data-r="driver" onclick="rolePick('driver')">🚛 سائق شاحنة</button><button data-r="car" onclick="rolePick('car')">🚗 سيارة ملاكي</button><button data-r="ops" onclick="rolePick('ops')">🖥 مدير أسطول</button></div>
  <div class="lbl" id="cargolbl">نوع الحمولة</div>
  <select class="in" id="cargo0"><option>وقود (فئة 3)</option><option>غاز (فئة 2)</option><option>مواد كيماوية (فئة 8)</option><option>حمولة عامة</option></select>
  <button class="btn" onclick="finishSetup()" style="margin-top:10px">ابدأ</button>
@@ -155,13 +155,14 @@ nav button.on{color:var(--gr)}
  </section>
 
  <section class="view" id="v2"><div class="set">
-  <div class="card"><h4>بياناتك</h4><label>الاسم / رقم الشاحنة</label><input class="in" id="s_name" maxlength="24" onchange="saveSet()">
-   <label>نوع الحمولة</label><select id="cargo" onchange="saveSet()"><option>وقود (فئة 3)</option><option>غاز (فئة 2)</option><option>مواد كيماوية (فئة 8)</option><option>حمولة عامة</option></select>
-   <label>أقصى سرعة مسموحة لشاحنتك (كم/س)</label><select id="cap" onchange="saveSet()"><option>60</option><option selected>70</option><option>80</option><option>90</option></select>
-   <label>رقم واتساب للطوارئ (بالكود الدولي، مثال 201001234567)</label><input class="in" id="dnum" inputmode="numeric" placeholder="201001234567" onchange="saveSet()">
+  <div class="card"><h4>بياناتك</h4><div class="truckonly"><label>الاسم / رقم الشاحنة</label><input class="in" id="s_name" maxlength="24" onchange="saveSet()">
+   <label>نوع الحمولة</label><select id="cargo" onchange="saveSet()"><option>وقود (فئة 3)</option><option>غاز (فئة 2)</option><option>مواد كيماوية (فئة 8)</option><option>حمولة عامة</option></select></div>
+   <label id="caplbl">أقصى سرعة مسموحة لشاحنتك (كم/س)</label><select id="cap" onchange="saveSet()"><option>60</option><option selected>70</option><option>80</option><option>90</option><option>100</option><option>120</option></select>
+   <div class="truckonly"><label>رقم واتساب للطوارئ (بالكود الدولي، مثال 201001234567)</label><input class="in" id="dnum" inputmode="numeric" placeholder="201001234567" onchange="saveSet()"></div>
    <div class="row2"><span>التنبيهات الصوتية</span><button class="sw on" id="sw_v" onclick="tog('voice')"></button></div>
    <div class="row2"><span>إبقاء الشاشة منورة</span><button class="sw on" id="sw_w" onclick="tog('wake')"></button></div></div>
-  <div class="card"><h4>الأسطول</h4><p id="fl_info"></p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="shareFleet()">📤 مشاركة دعوة للسواقين</button><button class="btn sm sec" onclick="copyCode()">نسخ الكود</button><button class="btn sm sec" onclick="leave()">خروج من الأسطول</button></div></div>
+  <div class="card" id="carcard" style="display:none"><h4>سيارة ملاكي</h4><p>الوضع ده شخصي: مفيش أسطول ولا بيانات بتتبعت لأي حد. التنبيهات (رادارات، تفتيش، زحمة) شغالة على جهازك بس.</p><button class="btn sm sec" onclick="leave()">تغيير الدور</button></div>
+  <div class="card" id="flcard"><h4>الأسطول</h4><p id="fl_info"></p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="shareFleet()">📤 مشاركة دعوة للسواقين</button><button class="btn sm sec" onclick="copyCode()">نسخ الكود</button><button class="btn sm sec" onclick="leave()">خروج من الأسطول</button></div></div>
   <div class="card"><h4>مصادر البيانات (حقيقية)</h4>
    <p>📷 الرادارات ونقاط التفتيش والبوابات وحدود السرعة: خريطة OpenStreetMap (بيانات مجتمع، بتتحدث على طول). مش قاعدة بيانات رسمية، فممكن تفوتها نقط جديدة أو متحركة.</p>
    <p>🚦 الزحمة والحوادث: TomTom Traffic، بنقيس السرعة الفعلية قصاد السرعة الطبيعية على الطريق.</p>
@@ -209,15 +210,17 @@ let obI=0;
 function obShow(){const o=OB[obI],last=obI==OB.length-1;$('onb').innerHTML=`<div class="ob-i">${o[0]}</div><h2>${o[1]}</h2><p class="t">${o[2]}</p><div class="dots">${OB.map((_,i)=>`<i class="${i==obI?'on':''}"></i>`).join('')}</div><button class="btn" onclick="obNext()">${last?'يلا نبدأ':'التالي'}</button>${last?'':'<button class="btn sec" onclick="obDone()" style="background:none;border:0;color:var(--mu);width:auto">تخطي</button>'}`}
 function obNext(){if(++obI>=OB.length)obDone();else obShow()}
 function obDone(){ST.onb=1;save();$('onb').style.display='none';showSetup()}
-function showSetup(){$('setup').style.display='flex';if(ST.fleet){$('fleet').value=ST.fleet;fmode('join',true)}else{fmode('new')}$('tname').value=ST.name||'';$('cargo0').value=ST.cargo||$('cargo0').options[0].value;rolePick(ST.role||'driver')}
+function showSetup(){$('setup').style.display='flex';if(ST.fleet){$('fleet').value=ST.fleet;fmode('join',true)}else{fmode('new')}$('tname').value=ST.name||'';$('cargo0').value=ST.cargo||$('cargo0').options[0].value;rolePick(ST.fleet&&ST.role=='car'?'driver':(ST.role||'driver'))}
 function genCode(){const a=new Uint8Array(24);crypto.getRandomValues(a);const al='abcdefghjkmnpqrstuvwxyz23456789';return Array.from(a,x=>al[x%al.length]).join('')}
 function fmode(m,keep){document.querySelectorAll('#fsel button').forEach(b=>b.classList.toggle('on',b.dataset.m==m));if(m=='new'){$('fleet').value=genCode();$('fleet').readOnly=true;$('flbl').textContent='كود أسطولك الجديد (اتولد عشوائي، 24 حرف). احفظه وابعته لسواقينك.'}else{if(!keep)$('fleet').value='';$('fleet').readOnly=false;$('flbl').textContent='اكتب كود الأسطول اللي استلمته من مديرك (12 حرف على الأقل)'}}
-function rolePick(r){ROLE=r;document.querySelectorAll('#rsel button').forEach(b=>b.classList.toggle('on',b.dataset.r==r));$('cargo0').style.display=$('cargolbl').style.display=r=='driver'?'':'none'}
-function finishSetup(){const f=$('fleet').value.trim().replace(/[^A-Za-z0-9_-]/g,'');if(f.length<12){alert('كود الأسطول لازم يكون 12 حرف أو رقم على الأقل');return}const n=$('tname').value.trim().replace(/[.#$\/\[\]]/g,'');if(!n){alert('اكتب اسمك أو رقم الشاحنة');return}
+function rolePick(r){ROLE=r;document.querySelectorAll('#rsel button').forEach(b=>b.classList.toggle('on',b.dataset.r==r));$('cargo0').style.display=$('cargolbl').style.display=r=='driver'?'':'none';$('fgrp').style.display=$('ngrp').style.display=r=='car'?'none':'';if(r=='car')$('cargo0').value=$('cargo0').options[0].value}
+function finishSetup(){if(ROLE=='car'){ST.fleet='';ST.name='ملاكي';ST.role='car';ST.cargo='';if(!ST.cap||ST.cap<100)ST.cap=120;save();$('setup').style.display='none';boot(false,true);return}
+ const f=$('fleet').value.trim().replace(/[^A-Za-z0-9_-]/g,'');if(f.length<12){alert('كود الأسطول لازم يكون 12 حرف أو رقم على الأقل');return}const n=$('tname').value.trim().replace(/[.#$\/\[\]]/g,'');if(!n){alert('اكتب اسمك أو رقم الشاحنة');return}
  ST.fleet=f;ST.name=n;ST.role=ROLE;ST.cargo=$('cargo0').value;save();$('setup').style.display='none';boot(false,true)}
 function startDemo(){ST.fleet='';ST.name='تجربة';ST.role='driver';$('setup').style.display='none';boot(true,true)}
 function tab(i){[0,1,2].forEach(k=>{$('v'+k).classList.toggle('on',k==i);$('n'+k).classList.toggle('on',k==i)});setTimeout(()=>{map&&map.invalidateSize();opsmap&&opsmap.invalidateSize()},120);if(i==1){ensureTrucks();renderOps.fit=0;renderOps()}if(i==2)fillSet()}
 /* ---------- settings ---------- */
+function applyRole(){const c=ROLE=='car';$('n1').style.display=ROLE=='ops'?'':'none';document.querySelectorAll('.truckonly').forEach(e=>e.style.display=c?'none':'');$('carcard').style.display=c?'':'none';$('flcard').style.display=c?'none':'';$('actions').style.display=c?'none':'';$('caplbl').textContent=c?'أقصى سرعة تحب التنبيه عندها (كم/س)':'أقصى سرعة مسموحة لشاحنتك (كم/س)'}
 function fillSet(){$('s_name').value=ST.name||'';$('cargo').value=ST.cargo||$('cargo').options[0].value;$('cap').value=ST.cap||70;$('dnum').value=ST.dnum||'';$('sw_v').classList.toggle('on',!ST.voiceOff);$('sw_w').classList.toggle('on',!ST.wakeOff);
  $('fl_info').innerHTML=live?`أنت في أسطول بكود:<br><span class="codebox" style="display:block;direction:ltr;text-align:left;color:var(--tx)">${esc(FLEET)}</span><br>الكود هو الحماية الوحيدة لبياناتك، متشاركوش غير مع سواقينك.`:'مش داخل أسطول (وضع تجربة).'}
 function saveSet(){ST.name=$('s_name').value.trim().replace(/[.#$\/\[\]]/g,'')||ST.name;ST.cargo=$('cargo').value;ST.cap=+$('cap').value;ST.dnum=$('dnum').value.replace(/\D/g,'');save();TNAME=ST.name;checks()}
@@ -225,7 +228,7 @@ function tog(k){if(k=='voice')ST.voiceOff=!ST.voiceOff;else ST.wakeOff=!ST.wakeO
 function inviteURL(){return location.origin+location.pathname+'#fleet='+encodeURIComponent(FLEET)}
 function shareFleet(){const t='انضم لأسطولنا على تطبيق درب. افتح الرابط واكتب اسمك:\n'+inviteURL();if(navigator.share)navigator.share({text:t}).catch(()=>{});else window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')}
 function copyCode(){navigator.clipboard&&navigator.clipboard.writeText(FLEET).then(()=>banner('✅','تم نسخ الكود',false,false))}
-function leave(){if(!confirm('تخرج من الأسطول على الجهاز ده؟'))return;delete ST.fleet;save();location.hash='';location.reload()}
+function leave(){if(!confirm(ROLE=='car'?'تغيّر الدور على الجهاز ده؟':'تخرج من الأسطول على الجهاز ده؟'))return;delete ST.fleet;if(ROLE=='car'){delete ST.role;delete ST.name}save();location.hash='';location.reload()}
 /* ---------- maps ---------- */
 const TILE='https://tile.openstreetmap.org/{z}/{x}/{y}.png',ATTR='© OpenStreetMap';
 function mkMap(el,c,z){const m=L.map(el,{zoomControl:false,preferCanvas:true,attributionControl:true}).setView(c,z);L.tileLayer(TILE,{attribution:ATTR,maxZoom:19,className:'dk'}).addTo(m);m.attributionControl.setPrefix(false);return m}
@@ -354,10 +357,10 @@ async function ttCycle(){if(!gotFix||document.hidden)return;const n=Date.now();
     if(dist(pos,[c[1],c[0]])<2500&&(i.properties.magnitudeOfDelay>=3||cat==1||cat==8)&&cool('i'+c,600000))banner('🚧','حدث على الطريق قدامك: '+d,false)})}}catch(e){}}
 setInterval(ttCycle,30000);
 /* ---------- boot ---------- */
-async function boot(isDemo,gest){demo=isDemo;FLEET=ST.fleet||'';TNAME=ST.name||'سائق';ROLE=ST.role||'driver';live=FLEET.length>=12&&!demo;
+async function boot(isDemo,gest){demo=isDemo;FLEET=ST.fleet||'';TNAME=ST.name||'سائق';ROLE=ST.role||'driver';live=FLEET.length>=12&&!demo&&ROLE!='car';
  if(live&&ROLE=='driver'){try{const t=await (await fetch(FB+'/fleets/'+FLEET+'/trucks/'+encodeURIComponent(TNAME)+'.json')).json();if(t&&t.did&&t.did!==DID&&Date.now()-t.ts<90000){alert('الاسم ده شغال دلوقتي على جهاز تاني. اختار اسم مختلف للشاحنة.');delete ST.name;save();$('setup').style.display='flex';showSetup();return}}catch(e){}}
- $('app').classList.add('on');initMaps();net(navigator.onLine);fillSet();
- if(ROLE=='ops'){tab(1);$('n0').style.display='none';$('gpsp').style.display='none'}else{tab(0);motionInit(gest);wakeLock();demo?startSim():startGPS()}
+ $('app').classList.add('on');initMaps();net(navigator.onLine);applyRole();fillSet();
+ if(ROLE=='ops'){tab(1);$('n0').style.display='none';$('gpsp').style.display='none'}else{tab(0);if(ROLE!='car')motionInit(gest);wakeLock();demo?startSim():startGPS()}
  if(live){startFleet();if(ROLE=='driver'){const jk=FLEET+'|'+TNAME;if(ST.jk!==jk||Date.now()-(ST.jt||0)>43200000){ST.jk=jk;ST.jt=Date.now();save();setTimeout(()=>pushEv('info','انضم للأسطول',false),1500)}}}
  if(demo)banner('ℹ️','وضع تجربة: رحلة محاكاة. الرادارات اللي بتظهر حقيقية من OpenStreetMap لكن الموقع والسرعة مش حقيقيين.',false,false);
  if(!live&&!demo){}
@@ -369,6 +372,6 @@ window.addEventListener('online',()=>net(true));window.addEventListener('offline
  if(q.get('fleet')){ST.fleet=q.get('fleet').replace(/[^A-Za-z0-9_-]/g,'');ST.name=q.get('name')||ST.name||'سائق';ST.role=q.get('role')||ST.role||'driver';ST.cargo=ST.cargo||'وقود (فئة 3)';ST.onb=1;save()}
  setTimeout(()=>{$('splash').style.opacity=0;setTimeout(()=>$('splash').style.display='none',500);
   if(q.get('auto')){ST.onb=1;demo=q.get('auto')=='sim';boot(demo);return}
-  if(ST.fleet&&ST.name&&ST.onb&&!m){boot(false)}else if(!ST.onb){$('onb').style.display='flex';obShow()}else showSetup()},q.get('fast')?100:1400)})();
+  if(((ST.fleet&&ST.name)||ST.role=='car')&&ST.onb&&!m){boot(false)}else if(!ST.onb){$('onb').style.display='flex';obShow()}else showSetup()},q.get('fast')?100:1400)})();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
