@@ -107,21 +107,33 @@ nav button.on{color:var(--gr)}
 
 <div class="full scroll" id="setup" style="display:none">
  <img src="icon.svg" width="64" height="64" style="border-radius:16px" alt="">
- <h2>إعداد الأسطول</h2>
- <p class="t" style="margin-bottom:4px">كل شركة ليها كودين: كود المدير (لغرفة العمليات، يفضل معاك إنت بس) وكود السواقين (بتبعته لسواقينك). شاحنات كل شركة بتظهر في غرفة عملياتها بس.</p>
+ <h2>درب</h2>
+ <p class="t" style="margin-bottom:8px">تطبيق سلامة وتتبع للشاحنات والسيارات على الطريق. بينبهك قبل الرادارات ونقاط التفتيش وبوابات الطريق وحدود السرعة، وبيورّيك الزحمة قدامك. السواقين بيظهروا على خريطة واحدة لغرفة عمليات الشركة، وفي زرار طوارئ، وتنبيه لو شاحنة وقفت على طريق سريع.</p>
+ <div class="lbl">اختار دورك</div>
+ <div class="seg" id="rsel"><button class="on" data-r="driver" onclick="rolePick('driver')">🚛 سائق شاحنة</button><button data-r="car" onclick="rolePick('car')">🚗 سيارة ملاكي</button><button data-r="ops" onclick="rolePick('ops')">🖥 مدير أسطول</button></div>
  <div id="fgrp"><div class="seg" id="fsel"><button class="on" data-m="new" onclick="fmode('new')">إنشاء أسطول جديد</button><button data-m="join" onclick="fmode('join')">عندي كود</button></div>
  <div class="lbl" id="flbl">كود أسطولك الجديد (اتولد عشوائي، 24 حرف)</div>
  <input class="in codebox" id="fleet" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="كود الأسطول"></div>
  <div id="ngrp"><div class="lbl">اسمك أو رقم الشاحنة</div>
  <input class="in" id="tname" maxlength="24" placeholder="مثال: شاحنة 5 - أحمد"></div>
- <div class="lbl">دورك</div>
- <div class="seg" id="rsel"><button class="on" data-r="driver" onclick="rolePick('driver')">🚛 سائق شاحنة</button><button data-r="car" onclick="rolePick('car')">🚗 سيارة ملاكي</button><button data-r="ops" onclick="rolePick('ops')">🖥 مدير أسطول</button></div>
  <div class="lbl" id="cargolbl">نوع الحمولة</div>
  <select class="in" id="cargo0"><option>وقود (فئة 3)</option><option>غاز (فئة 2)</option><option>مواد كيماوية (فئة 8)</option><option>حمولة عامة</option></select>
  <button class="btn" onclick="finishSetup()" style="margin-top:10px">ابدأ</button>
  <button class="btn sec" onclick="startDemo()" style="font-size:14px">تجربة بدون أسطول (محاكاة، بيانات غير حقيقية)</button>
 </div>
 
+<div class="full scroll" id="codesPg" style="display:none">
+ <h2>أكواد شركتك</h2>
+ <p class="t">احفظ الكودين دلوقتي في مكان آمن (رسالة لنفسك أو مدير كلمات المرور). مش هتقدر تغيّرهم بعد كده.</p>
+ <div class="lbl">كود المدير: بيفتح غرفة العمليات. متبعتوش لحد.</div>
+ <div class="codebox" id="cp_m" style="direction:ltr;text-align:left;user-select:all"></div>
+ <button class="btn sm sec" onclick="cpCopy('m')">نسخ كود المدير</button>
+ <div class="lbl">كود السواقين: ده اللي بتبعته لسواقين شركتك.</div>
+ <div class="codebox" id="cp_d" style="direction:ltr;text-align:left;user-select:all"></div>
+ <button class="btn sm sec" onclick="cpCopy('d')">نسخ كود السواقين</button>
+ <p class="t" style="margin-top:10px">اللي معاه كود المدير يشوف شاحنات شركتك. اللي معاه كود السواقين يقدر يظهر كشاحنة في شركتك. الكودين هتلاقيهم برضه في الإعدادات.</p>
+ <button class="btn" id="cp_ok" style="margin-top:10px">حفظت الكودين، كمّل لغرفة العمليات</button>
+</div>
 <div id="stp" style="display:none;position:fixed;left:10px;right:10px;top:calc(70px + var(--sa));z-index:4100;padding:14px;border-radius:16px;background:#7c2d12f5;border:1px solid #fb923c;box-shadow:0 8px 30px #000a;font-weight:700"><div style="font-size:17px">🚧 انت واقف على طريق سريع من أكتر من 30 ثانية</div><div style="font-size:13px;font-weight:400;margin:6px 0 10px">هنبلّغ غرفة العمليات والعربيات اللي جاية ورا خلال <b id="stn">10</b> ثواني. لو واقف لسبب عادي اختار:</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" style="background:#dc2626;color:#fff" onclick="stopAns(\'عطل\')">عطل / محتاج مساعدة</button><button class="btn sm sec" onclick="stopAns(null)">إشارة / زحمة</button><button class="btn sm sec" onclick="stopSafe()">مكان آمن / راحة / تحميل</button></div></div>
 <div id="banner"><span class="bi" id="bi">⚠️</span><span class="bt" id="bt"></span><button onclick="hideBanner()">تمام</button></div>
 <div id="crash"><div style="font-size:26px;font-weight:800">اتحس بصدمة قوية</div><div class="n" id="cn">15</div><div style="font-size:17px">لو مش بخير مش محتاج تعمل حاجة، هنبلّغ غرفة العمليات تلقائيًا.</div><button onclick="crashOk()">أنا بخير</button></div>
@@ -211,17 +223,19 @@ let obI=0;
 function obShow(){const o=OB[obI],last=obI==OB.length-1;$('onb').innerHTML=`<div class="ob-i">${o[0]}</div><h2>${o[1]}</h2><p class="t">${o[2]}</p><div class="dots">${OB.map((_,i)=>`<i class="${i==obI?'on':''}"></i>`).join('')}</div><button class="btn" onclick="obNext()">${last?'يلا نبدأ':'التالي'}</button>${last?'':'<button class="btn sec" onclick="obDone()" style="background:none;border:0;color:var(--mu);width:auto">تخطي</button>'}`}
 function obNext(){if(++obI>=OB.length)obDone();else obShow()}
 function obDone(){ST.onb=1;save();$('onb').style.display='none';showSetup()}
-function showSetup(){$('setup').style.display='flex';if(ST.fleet){$('fleet').value=ST.fleet;fmode('join',true)}else{fmode('new')}$('tname').value=ST.name||'';$('cargo0').value=ST.cargo||$('cargo0').options[0].value;rolePick(ST.fleet&&ST.role=='car'?'driver':(ST.role||'driver'))}
+function showSetup(){$('setup').style.display='flex';if(ST.fleet)$('fleet').value=ST.fleet;$('tname').value=ST.name||'';$('cargo0').value=ST.cargo||$('cargo0').options[0].value;rolePick(ST.fleet&&ST.role=='car'?'driver':(ST.role||'driver'))}
 function genCode(){const a=new Uint8Array(24);crypto.getRandomValues(a);const al='abcdefghjkmnpqrstuvwxyz23456789';return Array.from(a,x=>al[x%al.length]).join('')}
-function fmode(m,keep){document.querySelectorAll('#fsel button').forEach(b=>b.classList.toggle('on',b.dataset.m==m));if(m=='new'){$('fleet').value='هيتولد تلقائي';$('fleet').readOnly=true;$('flbl').textContent='هننشئ شركة جديدة وتبقى إنت المدير. هيتولد كود مدير وكود سواقين عشوائيين (24 حرف) وهيظهروا لك.';rolePick('ops')}else{if(!keep)$('fleet').value='';$('fleet').readOnly=false;$('flbl').textContent='اكتب الكود اللي استلمته: كود السواقين لو إنت سائق، أو كود المدير لو إنت مدير أسطول (12 حرف على الأقل)'}}
-function rolePick(r){ROLE=r;document.querySelectorAll('#rsel button').forEach(b=>b.classList.toggle('on',b.dataset.r==r));$('cargo0').style.display=$('cargolbl').style.display=r=='driver'?'':'none';$('fgrp').style.display=$('ngrp').style.display=r=='car'?'none':'';if(r=='car')$('cargo0').value=$('cargo0').options[0].value}
+function fmode(m,keep){document.querySelectorAll('#fsel button').forEach(b=>b.classList.toggle('on',b.dataset.m==m));if(m=='new'){$('fleet').value='هيتولد تلقائي';$('fleet').readOnly=true;$('flbl').textContent='هننشئ شركة جديدة وتبقى إنت المدير. هتشوف أكوادها في الصفحة اللي بعد كده.'}else{if($('fleet').value=='هيتولد تلقائي')$('fleet').value='';if(!keep)$('fleet').value='';$('fleet').readOnly=false;$('flbl').textContent=ROLE=='ops'?'اكتب كود المدير بتاع شركتك':'اكتب كود السواقين اللي استلمته من مديرك'}}
+function rolePick(r){ROLE=r;if(r=='driver'){$('fsel').style.display='none';if(ST.role=='ops'&&$('fleet').value==ST.fleet)$('fleet').value='';fmode('join',true)}else if(r=='ops'){$('fsel').style.display='';fmode(ST.fleet&&ST.role=='ops'?'join':'new',true)}document.querySelectorAll('#rsel button').forEach(b=>b.classList.toggle('on',b.dataset.r==r));$('cargo0').style.display=$('cargolbl').style.display=r=='driver'?'':'none';$('fgrp').style.display=$('ngrp').style.display=r=='car'?'none':'';if(r=='car')$('cargo0').value=$('cargo0').options[0].value}
 async function finishSetup(){if(ROLE=='car'){ST.fleet='';ST.name='ملاكي';ST.role='car';ST.cargo='';if(!ST.cap||ST.cap<100)ST.cap=120;save();$('setup').style.display='none';boot(false,true);return}
- const isNew=(document.querySelector('#fsel .on')||{dataset:{}}).dataset.m=='new';
+ const isNew=ROLE=='ops'&&(document.querySelector('#fsel .on')||{dataset:{}}).dataset.m=='new';
  const n=$('tname').value.trim().replace(/[.#$\/\[\]]/g,'');if(!n){alert('اكتب اسمك أو رقم الشاحنة');return}
  if(isNew){const M=genCode(),D=genCode();try{const r1=await fetch(FB+'/dr/'+D+'.json',{method:'PUT',body:JSON.stringify({t:Date.now()})});const r2=r1.ok&&await fetch(FB+'/co/'+M+'.json',{method:'PUT',body:JSON.stringify({d:D,t:Date.now()})});if(!r1.ok||!r2||!r2.ok)throw 0}catch(e){alert('معرفناش ننشئ الشركة دلوقتي. اتأكد من النت وجرب تاني.');return}
   ST.fleet=M;ST.dcache=D;ST.name=n;ST.role='ops';ST.cargo=$('cargo0').value;ST.fresh=1;save();$('setup').style.display='none';boot(false,true);return}
  const f=$('fleet').value.trim().replace(/[^A-Za-z0-9_-]/g,'');if(f.length<12){alert('الكود لازم يكون 12 حرف أو رقم على الأقل');return}
- ST.fleet=f;ST.name=n;ST.role=ROLE;ST.cargo=$('cargo0').value;delete ST.dcache;save();$('setup').style.display='none';boot(false,true)}
+ ST.fleet=f;ST.name=n;ST.role=ROLE;ST.cargo=$('cargo0').value;delete ST.dcache;if(ROLE=='ops')ST.fresh=1;save();$('setup').style.display='none';boot(false,true)}
+function cpCopy(k){const t=k=='m'?MGR:FLEET;navigator.clipboard&&navigator.clipboard.writeText(t).then(()=>banner('✅','تم النسخ',false,false))}
+function showCodes(){return new Promise(r=>{$('cp_m').textContent=MGR;$('cp_d').textContent=FLEET;$('codesPg').style.display='flex';$('cp_ok').onclick=()=>{$('codesPg').style.display='none';delete ST.fresh;save();r()}})}
 function startDemo(){ST.fleet='';ST.name='تجربة';ST.role='driver';$('setup').style.display='none';boot(true,true)}
 function tab(i){[0,1,2].forEach(k=>{$('v'+k).classList.toggle('on',k==i);$('n'+k).classList.toggle('on',k==i)});setTimeout(()=>{map&&map.invalidateSize();opsmap&&opsmap.invalidateSize()},120);if(i==1){ensureTrucks();renderOps.fit=0;renderOps()}if(i==2)fillSet()}
 /* ---------- settings ---------- */
@@ -415,12 +429,11 @@ function L2(x){return L.marker([x.la,x.lo],{icon:L.divIcon({html:'<div class="mk
 setInterval(stopsCheck,5000);
 /* ---------- boot ---------- */
 async function boot(isDemo,gest){demo=isDemo;FLEET=ST.fleet||'';MGR='';TNAME=ST.name||'سائق';ROLE=ST.role||'driver';live=FLEET.length>=12&&!demo&&ROLE!='car';
- if(live&&ROLE=='ops'){MGR=FLEET;let d=null,bad=false;try{const c=await (await fetch(FB+'/co/'+MGR+'.json')).json();if(c&&c.d)d=c.d;else bad=true}catch(e){d=ST.dcache||null}if(bad||!d){alert('كود المدير ده مش موجود أو غلط. اكتب كود المدير الصح.');delete ST.fleet;delete ST.dcache;save();$('setup').style.display='flex';showSetup();return}FLEET=d;ST.dcache=d;save()}
+ if(live&&ROLE=='ops'){MGR=FLEET;let d=null,bad=false;try{const c=await (await fetch(FB+'/co/'+MGR+'.json')).json();if(c&&c.d)d=c.d;else bad=true}catch(e){d=ST.dcache||null}if(bad||!d){alert('كود المدير ده مش موجود أو غلط. اكتب كود المدير الصح.');delete ST.fleet;delete ST.dcache;save();$('setup').style.display='flex';showSetup();return}FLEET=d;ST.dcache=d;save();if(ST.fresh)await showCodes()}
  if(live&&ROLE=='driver'){try{const t=await (await fetch(FB+'/f2/'+FLEET+'/trucks/'+encodeURIComponent(TNAME)+'.json')).json();if(t&&t.error){alert('كود السواقين ده مش صحيح أو متوقف. اطلب كود السواقين من مديرك (مش كود المدير).');delete ST.fleet;save();$('setup').style.display='flex';showSetup();return}if(t&&t.did&&t.did!==DID&&Date.now()-t.ts<90000){alert('الاسم ده شغال دلوقتي على جهاز تاني. اختار اسم مختلف للشاحنة.');delete ST.name;save();$('setup').style.display='flex';showSetup();return}}catch(e){}}
  $('app').classList.add('on');initMaps();net(navigator.onLine);applyRole();fillSet();
  if(ROLE=='ops'){tab(1);$('n0').style.display='none';$('gpsp').style.display='none'}else{tab(0);if(ROLE!='car')motionInit(gest);wakeLock();demo?startSim():startGPS();startStops()}
  if(live){startFleet();if(ROLE=='driver'){const jk=FLEET+'|'+TNAME;if(ST.jk!==jk||Date.now()-(ST.jt||0)>43200000){ST.jk=jk;ST.jt=Date.now();save();setTimeout(()=>pushEv('info','انضم للأسطول',false),1500)}}}
- if(ST.fresh){delete ST.fresh;save();setTimeout(()=>{tab(2);alert('تم إنشاء شركتك. احفظ دلوقتي كود المدير وكود السواقين اللي في صفحة الإعدادات. كود المدير ليك إنت بس، وكود السواقين بتبعته لسواقينك.')},900)}
  if(demo)banner('ℹ️','وضع تجربة: رحلة محاكاة. الرادارات اللي بتظهر حقيقية من OpenStreetMap لكن الموقع والسرعة مش حقيقيين.',false,false);
  if(!live&&!demo){}
  const q=new URLSearchParams(location.search);if(q.get('tab'))tab(+q.get('tab'))}
