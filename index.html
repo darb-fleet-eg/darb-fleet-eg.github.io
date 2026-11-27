@@ -375,10 +375,14 @@ async function stopZone(){if((ST.safe||[]).some(q=>dist(pos,q)<300))return 'no';
  if(roads.some(r=>!(RS.test(r.tags.highway)||(r.tags.highway=='primary'&&parseInt(r.tags.maxspeed)>=80))))return 'no';
  return 'ok'}
 async function stopJam(){if(Date.now()-SP.flow<90000)return false;SP.flow=Date.now();try{const r=await (await fetch('https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute/10/json?point='+pos[0].toFixed(4)+','+pos[1].toFixed(4)+'&key='+TT_KEY)).json(),f=r.flowSegmentData;return !!(f&&(f.currentSpeed/f.freeFlowSpeed<.5||f.roadClosure))}catch(e){return false}}
-function sendStop(reason){if(SP.sent&&Date.now()-SP.hb<45000)return;const n=Date.now();SP.hb=n;const first=!SP.sent;SP.sent=SP.sent||n;SP.cell=SP.cell||scell(pos[0],pos[1]);SP.reason=reason||SP.reason||'واقفة';
- fbPut('/stops/'+SP.cell+'/'+DID,{lat:+pos[0].toFixed(5),lon:+pos[1].toFixed(5),ts:n,r:SP.reason,hd:heading==null?null:Math.round(heading)});
- if(first)pushEv('stopped','الشاحنة واقفة على الطريق أكتر من 30 ثانية'+(SP.reason=='عطل'?' (عطل / محتاج مساعدة)':''),true)}
-function clearStop(why){if(!SP.sent)return;const c=SP.cell;SP.sent=0;SP.cell='';try{fetch(FB+'/stops/'+c+'/'+DID+'.json',{method:'DELETE',keepalive:true}).catch(()=>{})}catch(e){}pushEv('info','الشاحنة اتحركت',true)}
+async function ensureReg(){const key=FLEET+'|'+TNAME;if(SP.reg===key)return true;if(!live)return false;try{const r=await fetch(FB+'/truckreg/'+DID+'.json',{method:'PUT',body:JSON.stringify({c:FLEET,n:TNAME,t:Date.now()})});if(r.ok){SP.reg=key;return true}if(SP.regOld===key)return true;return false}catch(e){return false}}
+async function sendStop(reason){if(SP.sent&&Date.now()-SP.hb<45000)return;if(SP.busy)return;SP.busy=1;try{
+ if(!SP.sent&&!(await ensureReg())){SP.prompt=-3;SP.retry=Date.now()+30000;return}
+ const n=Date.now();SP.hb=n;const first=!SP.sent;SP.sent=SP.sent||n;SP.cell='x';SP.reason=reason||SP.reason||'واقفة';
+ const o={lat:+pos[0].toFixed(5),lon:+pos[1].toFixed(5),ts:n,r:SP.reason};if(heading!=null)o.hd=Math.round(heading);
+ fbPut('/stops/'+DID,o);
+ if(first)pushEv('stopped','الشاحنة واقفة على الطريق أكتر من 30 ثانية'+(SP.reason=='عطل'?' (عطل / محتاج مساعدة)':''),true)}finally{SP.busy=0}}
+function clearStop(why){if(!SP.sent)return;const c=SP.cell;SP.sent=0;SP.cell='';try{fetch(FB+'/stops/'+DID+'.json',{method:'DELETE',keepalive:true}).catch(()=>{})}catch(e){}pushEv('info','الشاحنة اتحركت',true)}
 function stopSafe(){ST.safe=(ST.safe||[]).slice(-39);ST.safe.push(pos.slice());save();stopAns(null)}
 function stopAns(r){$('stp').style.display='none';SP.prompt=-1;if(r)sendStop(r)}
 async function stopTick(){if(ROLE!='driver'||demo||!gotFix)return;const n=Date.now();
@@ -393,9 +397,9 @@ async function stopTick(){if(ROLE!='driver'||demo||!gotFix)return;const n=Date.n
  if(!SP.prompt){SP.prompt=-2;const z=await stopZone();if(z=='fail'){SP.prompt=-3;SP.retry=Date.now()+60000;return}if(z=='no'||await stopJam()){SP.prompt=-1;return}SP.prompt=Date.now();$('stp').style.display='block';beep(780);say('انت واقف على الطريق. لو مش محتاج تنبيه اختار السبب.');return}
  if(SP.prompt>0){const left=Math.max(0,Math.ceil((GRACE_MS-(n-SP.prompt))/1000));$('stn').textContent=left;if(n-SP.prompt>=GRACE_MS){$('stp').style.display='none';SP.prompt=-1;sendStop('واقفة')}}}
 setInterval(stopTick,1500);
-addEventListener('pagehide',()=>{if(SP.sent)try{fetch(FB+'/stops/'+SP.cell+'/'+DID+'.json',{method:'DELETE',keepalive:true})}catch(e){}});
+addEventListener('pagehide',()=>{if(SP.sent)try{fetch(FB+'/stops/'+DID+'.json',{method:'DELETE',keepalive:true})}catch(e){}});
 function startStops(){if(stopsOn||demo)return;stopsOn=true;stream(FB+'/stops.json',()=>stops,v=>{stops=v&&typeof v=='object'?v:{}},stopsCheck)}
-function stopList(){const out=[],n=Date.now();Object.values(stops||{}).forEach(c=>{if(!c||typeof c!='object')return;Object.entries(c).forEach(([id,v])=>{if(out.length>300||!v||typeof v!='object'||id===DID)return;const la=+v.lat,lo=+v.lon,ts=+v.ts;if(!isFinite(la)||!isFinite(lo)||!isFinite(ts)||Math.abs(la)>90||Math.abs(lo)>180)return;if(n-ts>180000||ts-n>60000)return;out.push({id,la,lo,ts,r:SREASON[v.r]||'واقفة'})})});return out}
+function stopList(){const out=[],n=Date.now();{Object.entries(stops||{}).forEach(([id,v])=>{if(out.length>300||!v||typeof v!='object'||id===DID)return;const la=+v.lat,lo=+v.lon,ts=+v.ts;if(!isFinite(la)||!isFinite(lo)||!isFinite(ts)||Math.abs(la)>90||Math.abs(lo)>180)return;if(n-ts>180000||ts-n>60000)return;out.push({id,la,lo,ts,r:SREASON[v.r]||'واقفة'})})}return out}
 function stopsCheck(){const L=stopList(),keep={};
  L.forEach(x=>{if(!map||dist(pos,[x.la,x.lo])>25000)return;keep[x.id]=1;if(!stopMk[x.id])stopMk[x.id]=L.length&&L2(x)});
  Object.keys(stopMk).forEach(k=>{if(!keep[k]){try{stopMk[k].remove()}catch(e){}delete stopMk[k]}});
