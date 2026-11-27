@@ -110,7 +110,7 @@ nav button.on{color:var(--gr)}
  <h2>درب</h2>
  <p class="t" style="margin-bottom:8px">تطبيق سلامة وتتبع للشاحنات والسيارات على الطريق. بينبهك قبل الرادارات ونقاط التفتيش وبوابات الطريق وحدود السرعة، وبيورّيك الزحمة قدامك. السواقين بيظهروا على خريطة واحدة لغرفة عمليات الشركة، وفي زرار طوارئ، وتنبيه لو شاحنة وقفت على طريق سريع.</p>
  <div class="lbl">اختار دورك</div>
- <div class="seg" id="rsel"><button class="on" data-r="driver" onclick="rolePick('driver')">🚛 سائق شاحنة</button><button data-r="car" onclick="rolePick('car')">🚗 سيارة ملاكي</button><button data-r="ops" onclick="rolePick('ops')">🖥 مدير أسطول</button></div>
+ <div class="seg" id="rsel"><button class="on" data-r="driver" onclick="rolePick('driver')">🚛 سائق شاحنة</button><button data-r="solo" onclick="rolePick('solo')">🚚 شاحنة مستقلة</button><button data-r="car" onclick="rolePick('car')">🚗 سيارة ملاكي</button><button data-r="ops" onclick="rolePick('ops')">🖥 مدير أسطول</button></div>
  <div id="fgrp"><div class="seg" id="fsel"><button class="on" data-m="new" onclick="fmode('new')">إنشاء أسطول جديد</button><button data-m="join" onclick="fmode('join')">عندي كود</button></div>
  <div class="lbl" id="flbl">كود أسطولك الجديد (اتولد عشوائي، 24 حرف)</div>
  <input class="in codebox" id="fleet" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="كود الأسطول"></div>
@@ -141,7 +141,7 @@ nav button.on{color:var(--gr)}
 <div class="sheet" id="rsheet" onclick="if(event.target==this)closeSheet()"><div><h3>بلّغ عن حاجة على الطريق</h3><div class="grid" id="rgrid"></div></div></div>
 
 <div id="app">
- <header><img src="icon.svg" alt=""><b>درب</b><span class="sp"></span><span class="pill" id="gpsp" onclick="if(ROLE=='driver'&&!demo)startGPS()" style="cursor:pointer"><span class="dot" id="gdot"></span><span id="gtxt">GPS</span></span><span class="pill" id="netp"><span class="dot" id="ndot"></span><span id="ntxt">...</span></span></header>
+ <header><img src="icon.svg" alt=""><b>درب</b><span class="sp"></span><span class="pill" id="gpsp" onclick="if((ROLE=='driver'||ROLE=='solo')&&!demo)startGPS()" style="cursor:pointer"><span class="dot" id="gdot"></span><span id="gtxt">GPS</span></span><span class="pill" id="netp"><span class="dot" id="ndot"></span><span id="ntxt">...</span></span></header>
 
  <section class="view on" id="v0"><div class="wrap" style="display:flex;flex-direction:column;flex:1;min-height:0">
   <div id="hud">
@@ -174,6 +174,7 @@ nav button.on{color:var(--gr)}
    <div class="truckonly"><label>رقم واتساب للطوارئ (بالكود الدولي، مثال 201001234567)</label><input class="in" id="dnum" inputmode="numeric" placeholder="201001234567" onchange="saveSet()"></div>
    <div class="row2"><span>التنبيهات الصوتية</span><button class="sw on" id="sw_v" onclick="tog('voice')"></button></div>
    <div class="row2"><span>إبقاء الشاشة منورة</span><button class="sw on" id="sw_w" onclick="tog('wake')"></button></div></div>
+  <div class="card" id="solocard" style="display:none"><h4>شاحنة مستقلة</h4><p>مفيش أسطول ولا أكواد ولا غرفة عمليات. الرادارات وحدود السرعة (60/70/80) وتنبيهات الطريق شغالة على جهازك. التطبيق بيستقبل تنبيه لو فيه شاحنة واقفة على الطريق قدامك. بلاغات الطريق بتتسجل على خريطتك بس ومش بتتبعت لحد، وموقعك مش بيتبعت لأي حد.</p><button class="btn sm sec" onclick="leave()">تغيير الدور</button></div>
   <div class="card" id="carcard" style="display:none"><h4>سيارة ملاكي</h4><p>الوضع ده شخصي: مفيش أسطول ولا بيانات بتتبعت لأي حد. التنبيهات (رادارات، تفتيش، زحمة) شغالة على جهازك بس. التطبيق بيستقبل تنبيه لو فيه شاحنة واقفة على الطريق قدامك، ومبيبعتش موقعك.</p><button class="btn sm sec" onclick="leave()">تغيير الدور</button></div>
   <div class="card" id="flcard"><h4>الأسطول</h4><p id="fl_info"></p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="shareFleet()">📤 مشاركة دعوة للسواقين</button><button class="btn sm sec" onclick="copyCode()">نسخ الكود</button><button class="btn sm sec" onclick="leave()">خروج من الأسطول</button></div></div>
   <div class="card"><h4>مصادر البيانات (حقيقية)</h4>
@@ -226,8 +227,9 @@ function obDone(){ST.onb=1;save();$('onb').style.display='none';showSetup()}
 function showSetup(){$('setup').style.display='flex';if(ST.fleet)$('fleet').value=ST.fleet;$('tname').value=ST.name||'';$('cargo0').value=ST.cargo||$('cargo0').options[0].value;rolePick(ST.fleet&&ST.role=='car'?'driver':(ST.role||'driver'))}
 function genCode(){const a=new Uint8Array(24);crypto.getRandomValues(a);const al='abcdefghjkmnpqrstuvwxyz23456789';return Array.from(a,x=>al[x%al.length]).join('')}
 function fmode(m,keep){document.querySelectorAll('#fsel button').forEach(b=>b.classList.toggle('on',b.dataset.m==m));if(m=='new'){$('fleet').value='هيتولد تلقائي';$('fleet').readOnly=true;$('flbl').textContent='هننشئ شركة جديدة وتبقى إنت المدير. هتشوف أكوادها في الصفحة اللي بعد كده.'}else{if($('fleet').value=='هيتولد تلقائي')$('fleet').value='';if(!keep)$('fleet').value='';$('fleet').readOnly=false;$('flbl').textContent=ROLE=='ops'?'اكتب كود المدير بتاع شركتك':'اكتب كود السواقين اللي استلمته من مديرك'}}
-function rolePick(r){ROLE=r;if(r=='driver'){$('fsel').style.display='none';if(ST.role=='ops'&&$('fleet').value==ST.fleet)$('fleet').value='';fmode('join',true)}else if(r=='ops'){$('fsel').style.display='';fmode(ST.fleet&&ST.role=='ops'?'join':'new',true)}document.querySelectorAll('#rsel button').forEach(b=>b.classList.toggle('on',b.dataset.r==r));$('cargo0').style.display=$('cargolbl').style.display=r=='driver'?'':'none';$('fgrp').style.display=$('ngrp').style.display=r=='car'?'none':'';if(r=='car')$('cargo0').value=$('cargo0').options[0].value}
-async function finishSetup(){if(ROLE=='car'){ST.fleet='';ST.name='ملاكي';ST.role='car';ST.cargo='';if(!ST.cap||ST.cap<100)ST.cap=120;save();$('setup').style.display='none';boot(false,true);return}
+function rolePick(r){ROLE=r;if(r=='driver'){$('fsel').style.display='none';if(ST.role=='ops'&&$('fleet').value==ST.fleet)$('fleet').value='';fmode('join',true)}else if(r=='ops'){$('fsel').style.display='';fmode(ST.fleet&&ST.role=='ops'?'join':'new',true)}document.querySelectorAll('#rsel button').forEach(b=>b.classList.toggle('on',b.dataset.r==r));$('cargo0').style.display=$('cargolbl').style.display=(r=='driver'||r=='solo'||r=='ops')?'':'none';$('fgrp').style.display=$('ngrp').style.display=(r=='car'||r=='solo')?'none':'';if(r=='car')$('cargo0').value=$('cargo0').options[0].value}
+async function finishSetup(){if(ROLE=='solo'){ST.fleet='';ST.name='شاحنة مستقلة';ST.role='solo';ST.cargo=$('cargo0').value;if(!ST.cap||ST.cap>80)ST.cap=70;save();$('setup').style.display='none';boot(false,true);return}
+if(ROLE=='car'){ST.fleet='';ST.name='ملاكي';ST.role='car';ST.cargo='';if(!ST.cap||ST.cap<100)ST.cap=120;save();$('setup').style.display='none';boot(false,true);return}
  const isNew=ROLE=='ops'&&(document.querySelector('#fsel .on')||{dataset:{}}).dataset.m=='new';
  const n=$('tname').value.trim().replace(/[.#$\/\[\]]/g,'');if(!n){alert('اكتب اسمك أو رقم الشاحنة');return}
  if(isNew){const M=genCode(),D=genCode();try{const r1=await fetch(FB+'/dr/'+D+'.json',{method:'PUT',body:JSON.stringify({t:Date.now()})});const r2=r1.ok&&await fetch(FB+'/co/'+M+'.json',{method:'PUT',body:JSON.stringify({d:D,t:Date.now()})});if(!r1.ok||!r2||!r2.ok)throw 0}catch(e){alert('معرفناش ننشئ الشركة دلوقتي. اتأكد من النت وجرب تاني.');return}
@@ -239,7 +241,7 @@ function showCodes(){return new Promise(r=>{$('cp_m').textContent=MGR;$('cp_d').
 function startDemo(){ST.fleet='';ST.name='تجربة';ST.role='driver';$('setup').style.display='none';boot(true,true)}
 function tab(i){[0,1,2].forEach(k=>{$('v'+k).classList.toggle('on',k==i);$('n'+k).classList.toggle('on',k==i)});setTimeout(()=>{map&&map.invalidateSize();opsmap&&opsmap.invalidateSize()},120);if(i==1){ensureTrucks();renderOps.fit=0;renderOps()}if(i==2)fillSet()}
 /* ---------- settings ---------- */
-function applyRole(){const c=ROLE=='car';const OP=c?[80,90,100,120]:[60,70,80];$('cap').innerHTML=OP.map(x=>'<option>'+x+'</option>').join('');if(!OP.includes(ST.cap)){ST.cap=c?120:(ST.cap>80?80:70);save()}$('n1').style.display=ROLE=='ops'?'':'none';document.querySelectorAll('.truckonly').forEach(e=>e.style.display=c?'none':'');$('carcard').style.display=c?'':'none';$('flcard').style.display=c?'none':'';$('actions').style.display=c?'none':'';$('caplbl').textContent=c?'أقصى سرعة تحب التنبيه عندها (كم/س)':'أقصى سرعة مسموحة لشاحنتك (كم/س)'}
+function applyRole(){const c=ROLE=='car';const OP=c?[80,90,100,120]:[60,70,80];$('cap').innerHTML=OP.map(x=>'<option>'+x+'</option>').join('');if(!OP.includes(ST.cap)){ST.cap=c?120:(ST.cap>80?80:70);save()}$('n1').style.display=ROLE=='ops'?'':'none';document.querySelectorAll('.truckonly').forEach(e=>e.style.display=c?'none':'');$('carcard').style.display=c?'':'none';$('flcard').style.display=(c||ROLE=='solo')?'none':'';$('solocard').style.display=ROLE=='solo'?'':'none';$('actions').style.display=c?'none':'';$('caplbl').textContent=c?'أقصى سرعة تحب التنبيه عندها (كم/س)':'أقصى سرعة مسموحة لشاحنتك (كم/س)'}
 function fillSet(){$('s_name').value=ST.name||'';$('cargo').value=ST.cargo||$('cargo').options[0].value;$('cap').value=ST.cap||70;$('dnum').value=ST.dnum||'';$('sw_v').classList.toggle('on',!ST.voiceOff);$('sw_w').classList.toggle('on',!ST.wakeOff);
  $('fl_info').innerHTML=!live?'مش داخل أسطول (وضع تجربة).':(ROLE=='ops'?`كود المدير (لغرفة العمليات، متبعتوش لحد):<br><span class="codebox" style="display:block;direction:ltr;text-align:left;color:var(--tx);user-select:all">${esc(MGR)}</span><br>كود السواقين (ده اللي بتبعته للسواقين):<br><span class="codebox" style="display:block;direction:ltr;text-align:left;color:var(--tx);user-select:all">${esc(FLEET)}</span><br>اللي يعرف كود المدير يشوف شاحنات شركتك. اللي يعرف كود السواقين يقدر يظهر كشاحنة في شركتك. احفظ الكودين في مكان آمن.`:`أنت في أسطول بكود السواقين:<br><span class="codebox" style="display:block;direction:ltr;text-align:left;color:var(--tx)">${esc(FLEET)}</span><br>متشاركوش غير مع زمايلك في نفس الشركة.`)}
 function saveSet(){ST.name=$('s_name').value.trim().replace(/[.#$\/\[\]]/g,'')||ST.name;ST.cargo=$('cargo').value;ST.cap=+$('cap').value;ST.dnum=$('dnum').value.replace(/\D/g,'');save();TNAME=ST.name;checks()}
@@ -247,7 +249,7 @@ function tog(k){if(k=='voice')ST.voiceOff=!ST.voiceOff;else ST.wakeOff=!ST.wakeO
 function inviteURL(){return location.origin+location.pathname+'#fleet='+encodeURIComponent(FLEET)}
 function shareFleet(){const t='انضم لأسطولنا على تطبيق درب. افتح الرابط واكتب اسمك:\n'+inviteURL();if(navigator.share)navigator.share({text:t}).catch(()=>{});else window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')}
 function copyCode(){navigator.clipboard&&navigator.clipboard.writeText(FLEET).then(()=>banner('✅','تم نسخ الكود',false,false))}
-function leave(){if(!confirm(ROLE=='car'?'تغيّر الدور على الجهاز ده؟':'تخرج من الأسطول على الجهاز ده؟'))return;delete ST.fleet;if(ROLE=='car'){delete ST.role;delete ST.name}save();location.hash='';location.reload()}
+function leave(){if(!confirm((ROLE=='car'||ROLE=='solo')?'تغيّر الدور على الجهاز ده؟':'تخرج من الأسطول على الجهاز ده؟'))return;delete ST.fleet;if(ROLE=='car'||ROLE=='solo'){delete ST.role;delete ST.name}save();location.hash='';location.reload()}
 /* ---------- maps ---------- */
 const TILE='https://tile.openstreetmap.org/{z}/{x}/{y}.png',ATTR='© OpenStreetMap';
 function mkMap(el,c,z){const m=L.map(el,{zoomControl:false,preferCanvas:true,attributionControl:true}).setView(c,z);L.tileLayer(TILE,{attribution:ATTR,maxZoom:19,className:'dk'}).addTo(m);m.attributionControl.setPrefix(false);return m}
@@ -336,7 +338,7 @@ setInterval(()=>{if($('v1').classList.contains('on'))renderOps()},5000);
 /* ---------- reports, sos ---------- */
 function openSheet(){$('rgrid').innerHTML=['hazard','checkpoint','radar','closed','stopped','bump','fog','traffic'].map(k=>`<button onclick="rep('${k}')"><span class="i">${EVT[k][0]}</span>${EVT[k][1]}</button>`).join('');$('rsheet').classList.add('on')}
 function closeSheet(){$('rsheet').classList.remove('on')}
-function rep(k){closeSheet();pushEv(k,EVT[k][1]+' (بلاغ سائق)',true);L.marker(pos,{icon:L.divIcon({html:`<div class="mk" style="background:#b91c1c">${EVT[k][0]}</div>`,className:'',iconSize:[34,34],iconAnchor:[17,17]})}).addTo(map);banner('✅','تم تسجيل البلاغ وإبلاغ باقي السواقين',false)}
+function rep(k){closeSheet();pushEv(k,EVT[k][1]+' (بلاغ سائق)',true);L.marker(pos,{icon:L.divIcon({html:`<div class="mk" style="background:#b91c1c">${EVT[k][0]}</div>`,className:'',iconSize:[34,34],iconAnchor:[17,17]})}).addTo(map);banner('✅',live?'تم تسجيل البلاغ وإبلاغ باقي السواقين':'تم تسجيل البلاغ على خريطتك بس (مش بيتبعت لحد)',false)}
 function sosLink(){return `https://www.openstreetmap.org/?mlat=${pos[0].toFixed(5)}&mlon=${pos[1].toFixed(5)}#map=16/${pos[0].toFixed(5)}/${pos[1].toFixed(5)}`}
 function sos(t,type){pushEv(type||(/ونش/.test(t)?'tow':'sos'),t,true);const n=(ST.dnum||'').replace(/\D/g,'');const msg=`🚨 ${t}\nالسائق: ${TNAME}\nالحمولة: ${ST.cargo||''}\nموقعي: ${sosLink()}`;
  if(n)window.open('https://wa.me/'+n+'?text='+encodeURIComponent(msg),'_blank');else if(!live)banner('ℹ️','سجّل رقم واتساب للطوارئ من الإعدادات علشان الرسالة تتبعت',false,false);
@@ -444,6 +446,6 @@ window.addEventListener('online',()=>net(true));window.addEventListener('offline
  if(q.get('fleet')){ST.fleet=q.get('fleet').replace(/[^A-Za-z0-9_-]/g,'');ST.name=q.get('name')||ST.name||'سائق';ST.role=q.get('role')||ST.role||'driver';ST.cargo=ST.cargo||'وقود (فئة 3)';ST.onb=1;save()}
  setTimeout(()=>{$('splash').style.opacity=0;setTimeout(()=>$('splash').style.display='none',500);
   if(q.get('auto')){ST.onb=1;demo=q.get('auto')=='sim';boot(demo);return}
-  if(((ST.fleet&&ST.name)||ST.role=='car')&&ST.onb&&!m){boot(false)}else if(!ST.onb){$('onb').style.display='flex';obShow()}else showSetup()},q.get('fast')?100:1400)})();
+  if(((ST.fleet&&ST.name)||ST.role=='car'||ST.role=='solo')&&ST.onb&&!m){boot(false)}else if(!ST.onb){$('onb').style.display='flex';obShow()}else showSetup()},q.get('fast')?100:1400)})();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
