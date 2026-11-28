@@ -1,5 +1,5 @@
-const C='darb-v12',T='darb-tiles',MAXT=1500;
-self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(['./','index.html','data.js','leaflet.js','leaflet.css','icon.svg','manifest.json']).catch(()=>{})));self.skipWaiting()});
+const C='darb-v13',T='darb-tiles',MAXT=1500;
+self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(['./','index.html','data.js','leaflet.js','leaflet.css','icon.svg','manifest.json','cairo-arabic.woff2','cairo-latin.woff2']).catch(()=>{})));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C&&x!==T).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 let puts=0;
 async function trim(c){try{const k=await c.keys();if(k.length>MAXT)await Promise.all(k.slice(0,k.length-MAXT+100).map(x=>c.delete(x)))}catch(e){}}
